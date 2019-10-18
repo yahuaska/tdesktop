@@ -155,6 +155,7 @@ private:
 	void mouseDoubleClickEvent(QMouseEvent *e) override;
 	void mouseMoveEvent(QMouseEvent *e) override;
 	void mouseReleaseEvent(QMouseEvent *e) override;
+	void resizeEvent(QResizeEvent *e) override;
 	void contextMenuEvent(QContextMenuEvent *e) override;
 	void touchEvent(QTouchEvent *e);
 
@@ -365,10 +366,12 @@ private:
 	int _x = 0, _y = 0, _w = 0, _h = 0;
 	int _xStart = 0, _yStart = 0;
 	int _zoom = 0; // < 0 - out, 0 - none, > 0 - in
+	int _scale = 0;
 	float64 _zoomToScreen = 0.; // for documents
 	QPoint _mStart;
 	bool _pressed = false;
 	int32 _dragging = 0;
+	int32 _scaling = 0;
 	QPixmap _current;
 	bool _blurred = true;
 
@@ -414,7 +417,7 @@ private:
 
 	OverState _over = OverNone;
 	OverState _down = OverNone;
-	QPoint _lastAction, _lastMouseMovePos;
+	QPoint _lastAction, _lastMouseMovePos, _windowPos;
 	bool _ignoringDropdown = false;
 
 	Ui::Animations::Basic _stateAnimation;
