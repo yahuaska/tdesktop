@@ -11,7 +11,11 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/widgets/shadow.h"
 #include "ui/widgets/input_fields.h"
 #include "ui/ui_utility.h"
+<<<<<<< HEAD
 #include "platform/platform_info.h"
+=======
+#include "base/platform/base_platform_info.h"
+>>>>>>> pr
 #include "app.h"
 #include "styles/style_boxes.h"
 #include "styles/style_mediaview.h"

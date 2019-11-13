@@ -20,12 +20,17 @@
       ],
     },
     'libraries': [
+<<<<<<< HEAD:Telegram/gyp/telegram/linux.gypi
       '-lbreakpad_client',
       '-lcomposeplatforminputcontextplugin',
       '-libusplatforminputcontextplugin',
       '-lfcitxplatforminputcontextplugin',
       '-lhimeplatforminputcontextplugin',
       '-lnimfplatforminputcontextplugin',
+=======
+      '-Wl,-Bstatic',
+      '-lbreakpad_client',
+>>>>>>> pr:Telegram/gyp/telegram_linux.gypi
       '-llzma',
       '-lopenal',
       '-lavformat',
@@ -40,6 +45,15 @@
       '-lvdpau',
       '-ldrm',
       '-lz',
+<<<<<<< HEAD:Telegram/gyp/telegram/linux.gypi
+=======
+      '-lXi',
+      '-lXext',
+      '-lXfixes',
+      '-lXrender',
+      '<(linux_lib_ssl)',
+      '<(linux_lib_crypto)',
+>>>>>>> pr:Telegram/gyp/telegram_linux.gypi
 #      '<!(pkg-config 2> /dev/null --libs <@(pkgconfig_libs))',
     ],
     'cflags_cc': [

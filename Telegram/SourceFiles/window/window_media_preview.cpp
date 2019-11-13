@@ -15,7 +15,11 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "main/main_session.h"
 #include "chat_helpers/stickers.h"
 #include "window/window_session_controller.h"
+<<<<<<< HEAD
 #include "styles/style_boxes.h"
+=======
+#include "styles/style_layers.h"
+>>>>>>> pr
 #include "styles/style_chat_helpers.h"
 #include "styles/style_history.h"
 

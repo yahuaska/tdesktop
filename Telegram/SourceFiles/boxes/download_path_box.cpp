@@ -14,6 +14,10 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/widgets/buttons.h"
 #include "platform/platform_specific.h"
 #include "facades.h"
+<<<<<<< HEAD
+=======
+#include "styles/style_layers.h"
+>>>>>>> pr
 #include "styles/style_boxes.h"
 
 DownloadPathBox::DownloadPathBox(QWidget *parent)

@@ -54,7 +54,7 @@ void ShowAddParticipantsError(
 	not_null<PeerData*> chat,
 	const std::vector<not_null<UserData*>> &users);
 
-class AddContactBox : public BoxContent {
+class AddContactBox : public Ui::BoxContent {
 public:
 	AddContactBox(QWidget*, not_null<Main::Session*> session);
 	AddContactBox(
@@ -94,7 +94,7 @@ private:
 
 };
 
-class GroupInfoBox : public BoxContent, private MTP::Sender {
+class GroupInfoBox : public Ui::BoxContent, private MTP::Sender {
 public:
 	enum class Type {
 		Group,
@@ -140,7 +140,11 @@ private:
 };
 
 class SetupChannelBox
+<<<<<<< HEAD
 	: public BoxContent
+=======
+	: public Ui::BoxContent
+>>>>>>> pr
 	, public RPCSender
 	, private base::Subscriber {
 public:
@@ -209,7 +213,7 @@ private:
 
 };
 
-class EditNameBox : public BoxContent, public RPCSender {
+class EditNameBox : public Ui::BoxContent, public RPCSender {
 public:
 	EditNameBox(QWidget*, not_null<UserData*> user);
 
@@ -238,7 +242,11 @@ private:
 };
 
 class RevokePublicLinkBox
+<<<<<<< HEAD
 	: public BoxContent
+=======
+	: public Ui::BoxContent
+>>>>>>> pr
 	, public RPCSender
 	, private base::Subscriber {
 public:

@@ -6,21 +6,34 @@
 
 {
   'includes': [
+<<<<<<< HEAD
     'common/common.gypi',
+=======
+    'helpers/common/common.gypi',
+>>>>>>> pr
   ],
   'targets': [{
     'target_name': 'lib_export',
     'type': 'static_library',
     'includes': [
+<<<<<<< HEAD
       'common/library.gypi',
       'modules/qt.gypi',
       'modules/pch.gypi',
+=======
+      'helpers/common/library.gypi',
+      'helpers/modules/qt.gypi',
+      'helpers/modules/pch.gypi',
+>>>>>>> pr
     ],
     'variables': {
       'src_loc': '../SourceFiles',
       'res_loc': '../Resources',
+<<<<<<< HEAD
       'official_build_target%': '',
       'submodules_loc': '../ThirdParty',
+=======
+>>>>>>> pr
       'pch_source': '<(src_loc)/export/export_pch.cpp',
       'pch_header': '<(src_loc)/export/export_pch.h',
     },
@@ -28,26 +41,14 @@
     ],
     'dependencies': [
       'lib_scheme.gyp:lib_scheme',
-      'crl.gyp:crl',
+      '<(submodules_loc)/lib_base/lib_base.gyp:lib_base',
     ],
     'export_dependent_settings': [
       'lib_scheme.gyp:lib_scheme',
+      '<(submodules_loc)/lib_base/lib_base.gyp:lib_base',
     ],
-    'conditions': [[ 'build_macold', {
-      'xcode_settings': {
-        'OTHER_CPLUSPLUSFLAGS': [ '-nostdinc++' ],
-      },
-      'include_dirs': [
-        '/usr/local/macold/include/c++/v1',
-      ],
-    }]],
     'include_dirs': [
       '<(src_loc)',
-      '<(SHARED_INTERMEDIATE_DIR)',
-      '<(libs_loc)/range-v3/include',
-      '<(submodules_loc)/GSL/include',
-      '<(submodules_loc)/variant/include',
-      '<(submodules_loc)/crl/src',
     ],
     'sources': [
       '<(src_loc)/export/export_api_wrap.cpp',

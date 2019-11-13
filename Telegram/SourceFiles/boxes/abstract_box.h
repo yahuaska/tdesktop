@@ -7,12 +7,18 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #pragma once
 
+<<<<<<< HEAD
 #include "window/layer_widget.h"
 #include "base/unique_qptr.h"
 #include "base/flags.h"
 #include "ui/effects/animation_value.h"
 #include "ui/text/text_entity.h"
 #include "ui/rp_widget.h"
+=======
+#include "ui/layers/box_layer_widget.h"
+
+class Painter;
+>>>>>>> pr
 
 class Painter;
 
@@ -30,6 +36,7 @@ class FlatLabel;
 class FadeShadow;
 } // namespace Ui
 
+<<<<<<< HEAD
 class BoxContent;
 
 class BoxContentDelegate {
@@ -385,49 +392,34 @@ public:
 
 protected:
 	void paintEvent(QPaintEvent *e) override;
+=======
+// Legacy global method.
+namespace Ui {
+namespace internal {
+>>>>>>> pr
 
-};
+void showBox(
+	object_ptr<BoxContent> content,
+	Ui::LayerOptions options,
+	anim::type animated);
 
-class BoxPointer {
-public:
-	BoxPointer() = default;
-	BoxPointer(const BoxPointer &other) = default;
-	BoxPointer(BoxPointer &&other) : _value(base::take(other._value)) {
-	}
-	BoxPointer &operator=(const BoxPointer &other) {
-		if (_value != other._value) {
-			destroy();
-			_value = other._value;
-		}
-		return *this;
-	}
-	BoxPointer &operator=(BoxPointer &&other) {
-		if (_value != other._value) {
-			destroy();
-			_value = base::take(other._value);
-		}
-		return *this;
-	}
-	BoxPointer &operator=(BoxContent *other) {
-		if (_value != other) {
-			destroy();
-			_value = other;
-		}
-		return *this;
-	}
-	~BoxPointer() {
-		destroy();
-	}
+} // namespace internal
 
-private:
-	void destroy() {
-		if (const auto value = base::take(_value)) {
-			value->closeBox();
-		}
-	}
+template <typename BoxType>
+QPointer<BoxType> show(
+		object_ptr<BoxType> content,
+		Ui::LayerOptions options = Ui::LayerOption::CloseOther,
+		anim::type animated = anim::type::normal) {
+	auto result = QPointer<BoxType>(content.data());
+	internal::showBox(std::move(content), options, animated);
+	return result;
+}
 
-	QPointer<BoxContent> _value;
+void hideLayer(anim::type animated = anim::type::normal);
+void hideSettingsAndLayer(anim::type animated = anim::type::normal);
+bool isLayerShown();
 
+<<<<<<< HEAD
 };
 
 // Legacy global method.
@@ -455,4 +447,6 @@ void hideLayer(anim::type animated = anim::type::normal);
 void hideSettingsAndLayer(anim::type animated = anim::type::normal);
 bool isLayerShown();
 
+=======
+>>>>>>> pr
 } // namespace Ui

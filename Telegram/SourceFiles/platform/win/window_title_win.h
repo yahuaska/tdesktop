@@ -9,6 +9,13 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 #include "platform/platform_window_title.h"
 #include "base/object_ptr.h"
+<<<<<<< HEAD
+=======
+
+namespace style {
+struct WindowTitle;
+} // namespace style
+>>>>>>> pr
 
 namespace Ui {
 class IconButton;
@@ -48,6 +55,7 @@ private:
 	void updateButtonsState();
 	void updateControlsPosition();
 
+	const style::WindowTitle &_st;
 	object_ptr<Ui::IconButton> _minimize;
 	object_ptr<Ui::IconButton> _maximizeRestore;
 	object_ptr<Ui::IconButton> _close;

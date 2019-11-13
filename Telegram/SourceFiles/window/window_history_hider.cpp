@@ -13,7 +13,11 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "mainwidget.h"
 #include "facades.h"
 #include "app.h"
+<<<<<<< HEAD
 #include "styles/style_boxes.h"
+=======
+#include "styles/style_layers.h"
+>>>>>>> pr
 #include "styles/style_history.h"
 
 namespace Window {

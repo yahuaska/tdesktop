@@ -7,13 +7,18 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #pragma once
 
+<<<<<<< HEAD
 #include "window/layer_widget.h"
 
 class BoxContent;
+=======
+#include "ui/layers/layer_widget.h"
+>>>>>>> pr
 
 namespace Ui {
 class RpWidget;
 class SeparatePanel;
+class BoxContent;
 } // namespace Ui
 
 namespace Passport {
@@ -32,8 +37,8 @@ public:
 	void showCriticalError(const QString &error);
 	void showEditValue(object_ptr<Ui::RpWidget> form);
 	void showBox(
-		object_ptr<BoxContent> box,
-		LayerOptions options,
+		object_ptr<Ui::BoxContent> box,
+		Ui::LayerOptions options,
 		anim::type animated);
 	void showToast(const QString &text);
 

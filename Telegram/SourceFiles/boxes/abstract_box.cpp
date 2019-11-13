@@ -7,6 +7,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "boxes/abstract_box.h"
 
+<<<<<<< HEAD
 #include "styles/style_boxes.h"
 #include "styles/style_profile.h"
 #include "storage/localstorage.h"
@@ -20,15 +21,16 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/text/text_utilities.h"
 #include "ui/painter.h"
 #include "base/timer.h"
+=======
+>>>>>>> pr
 #include "mainwidget.h"
 #include "mainwindow.h"
 #include "app.h"
 
-struct AbstractBox::LoadingProgress {
-	LoadingProgress(
-		Fn<void()> &&callback,
-		const style::InfiniteRadialAnimation &st);
+namespace Ui {
+namespace internal {
 
+<<<<<<< HEAD
 	Ui::InfiniteRadialAnimation animation;
 	base::Timer removeTimer;
 };
@@ -500,97 +502,40 @@ void AbstractBox::showLoading(bool show) {
 			_loadingProgress->animation.stop();
 		}
 		return;
-	}
-	if (!_loadingProgress) {
-		const auto callback = [=] {
-			if (!anim::Disabled()) {
-				const auto t = st::boxLoadingAnimation.thickness;
-				update(loadingRect().marginsAdded({ t, t, t, t }));
-			}
-		};
-		_loadingProgress = std::make_unique<LoadingProgress>(
-			callback,
-			st::boxLoadingAnimation);
-		_loadingProgress->removeTimer.setCallback([=] {
-			_loadingProgress = nullptr;
-		});
-	} else {
-		_loadingProgress->removeTimer.cancel();
-	}
-	_loadingProgress->animation.start();
-}
-
-
-void AbstractBox::setDimensions(int newWidth, int maxHeight, bool forceCenterPosition) {
-	_maxContentHeight = maxHeight;
-
-	auto fullHeight = countFullHeight();
-	if (width() != newWidth || _fullHeight != fullHeight) {
-		_fullHeight = fullHeight;
-		if (parentWidget()) {
-			auto oldGeometry = geometry();
-			resize(newWidth, countRealHeight());
-			auto newGeometry = geometry();
-			auto parentHeight = parentWidget()->height();
-			if (newGeometry.top() + newGeometry.height() + st::boxVerticalMargin > parentHeight
-				|| forceCenterPosition) {
-				const auto top1 = parentHeight - int(st::boxVerticalMargin) - newGeometry.height();
-				const auto top2 = (parentHeight - newGeometry.height()) / 2;
-				const auto newTop = forceCenterPosition
-					? std::min(top1, top2)
-					: std::max(top1, top2);
-				if (newTop != newGeometry.top()) {
-					move(newGeometry.left(), newTop);
-					resizeEvent(0);
-				}
-			}
-			parentWidget()->update(oldGeometry.united(geometry()).marginsAdded(st::boxRoundShadow.extend));
-		} else {
-			resize(newWidth, 0);
-		}
+=======
+void showBox(
+		object_ptr<BoxContent> content,
+		LayerOptions options,
+		anim::type animated) {
+	if (auto w = App::wnd()) {
+		w->ui_showBox(std::move(content), options, animated);
+>>>>>>> pr
 	}
 }
 
-int AbstractBox::countRealHeight() const {
-	return qMin(_fullHeight, parentWidget()->height() - 2 * st::boxVerticalMargin);
-}
+} // namespace internal
 
-int AbstractBox::countFullHeight() const {
-	return contentTop() + _maxContentHeight + buttonsHeight();
-}
-
-int AbstractBox::contentTop() const {
-	return hasTitle() ? titleHeight() : (_noContentMargin ? 0 : st::boxTopMargin);
-}
-
-void AbstractBox::resizeEvent(QResizeEvent *e) {
-	updateButtonsPositions();
-	updateTitlePosition();
-
-	auto top = contentTop();
-	_content->resize(width(), height() - top - buttonsHeight());
-	_content->moveToLeft(0, top);
-
-	LayerWidget::resizeEvent(e);
-}
-
-void AbstractBox::keyPressEvent(QKeyEvent *e) {
-	if (e->key() == Qt::Key_Escape) {
-		closeBox();
-	} else {
-		LayerWidget::keyPressEvent(e);
+void hideLayer(anim::type animated) {
+	if (auto w = App::wnd()) {
+		w->ui_showBox(
+			{ nullptr },
+			LayerOption::CloseOther,
+			animated);
 	}
 }
 
-BoxContentDivider::BoxContentDivider(QWidget *parent)
-: BoxContentDivider(parent, st::rightsDividerHeight) {
+void hideSettingsAndLayer(anim::type animated) {
+	if (auto w = App::wnd()) {
+		w->ui_hideSettingsAndLayer(animated);
+	}
 }
 
-BoxContentDivider::BoxContentDivider(QWidget *parent, int height)
-: RpWidget(parent) {
-	resize(width(), height);
+bool isLayerShown() {
+	if (auto w = App::wnd()) return w->ui_isLayerShown();
+	return false;
 }
 
+<<<<<<< HEAD
 void BoxContentDivider::paintEvent(QPaintEvent *e) {
 	Painter p(this);
 	p.fillRect(e->rect(), st::contactsAboutBg);
@@ -634,4 +579,6 @@ bool isLayerShown() {
 	return false;
 }
 
+=======
+>>>>>>> pr
 } // namespace Ui

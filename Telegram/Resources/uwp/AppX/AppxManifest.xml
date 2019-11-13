@@ -9,7 +9,11 @@
   <Identity Name="TelegramMessengerLLP.TelegramDesktop"
     ProcessorArchitecture="ARCHITECTURE"
     Publisher="CN=536BC709-8EE1-4478-AF22-F0F0F26FF64A"
+<<<<<<< HEAD
     Version="1.8.13.0" />
+=======
+    Version="1.9.1.0" />
+>>>>>>> pr
   <Properties>
     <DisplayName>Telegram Desktop</DisplayName>
     <PublisherDisplayName>Telegram FZ-LLC</PublisherDisplayName>

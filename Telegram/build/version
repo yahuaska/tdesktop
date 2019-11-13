@@ -1,6 +1,14 @@
+<<<<<<< HEAD
 AppVersion         1008013
 AppVersionStrMajor 1.8
 AppVersionStrSmall 1.8.13
 AppVersionStr      1.8.13
 BetaChannel        0
+=======
+AppVersion         1009001
+AppVersionStrMajor 1.9
+AppVersionStrSmall 1.9.1
+AppVersionStr      1.9.1
+BetaChannel        1
+>>>>>>> pr
 AlphaVersion       0

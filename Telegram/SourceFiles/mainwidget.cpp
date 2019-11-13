@@ -608,7 +608,7 @@ bool MainWidget::setForwardDraft(PeerId peerId, MessageIdsList &&items) {
 		session().data().idsToItems(items),
 		true);
 	if (!error.isEmpty()) {
-		Ui::show(Box<InformBox>(error), LayerOption::KeepOther);
+		Ui::show(Box<InformBox>(error), Ui::LayerOption::KeepOther);
 		return false;
 	}
 
@@ -809,6 +809,7 @@ void MainWidget::hiderLayer(base::unique_qptr<Window::HistoryHider> hider) {
 	_hider->hidden(
 	) | rpl::start_with_next([=, instance = _hider.get()] {
 		clearHider(instance);
+		instance->hide();
 		instance->deleteLater();
 	}, _hider->lifetime());
 

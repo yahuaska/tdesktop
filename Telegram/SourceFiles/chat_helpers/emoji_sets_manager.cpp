@@ -22,6 +22,10 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "main/main_account.h"
 #include "mainwidget.h"
 #include "app.h"
+<<<<<<< HEAD
+=======
+#include "styles/style_layers.h"
+>>>>>>> pr
 #include "styles/style_boxes.h"
 #include "styles/style_chat_helpers.h"
 

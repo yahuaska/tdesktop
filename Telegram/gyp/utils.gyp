@@ -6,7 +6,11 @@
 
 {
   'includes': [
+<<<<<<< HEAD
     'common/common.gypi',
+=======
+    'helpers/common/common.gypi',
+>>>>>>> pr
   ],
   'targets': [{
     'target_name': 'Updater',
@@ -15,7 +19,11 @@
       'res_loc': '../Resources',
     },
     'includes': [
+<<<<<<< HEAD
       'common/executable.gypi',
+=======
+      'helpers/common/executable.gypi',
+>>>>>>> pr
     ],
 
     'include_dirs': [
@@ -57,40 +65,35 @@
     'target_name': 'Packer',
     'variables': {
       'src_loc': '../SourceFiles',
-      'mac_target': '10.10',
+      'mac_target': '10.12',
     },
     'includes': [
+<<<<<<< HEAD
       'common/executable.gypi',
       'modules/qt.gypi',
+=======
+      'helpers/common/executable.gypi',
+      'helpers/modules/qt.gypi',
+      'helpers/modules/openssl.gypi',
+>>>>>>> pr
     ],
     'conditions': [
       [ 'build_win', {
         'libraries': [
-          'libeay32',
-          'ssleay32',
-          'Crypt32',
           'zlibstat',
           'LzmaLib',
         ],
       }],
       [ 'build_linux', {
         'libraries': [
-          'ssl',
-          'crypto',
+          '<(linux_lib_ssl)',
+          '<(linux_lib_crypto)',
           'lzma',
         ],
       }],
       [ 'build_mac', {
-        'include_dirs': [
-          '<(libs_loc)/openssl/include'
-        ],
-        'library_dirs': [
-          '<(libs_loc)/openssl',
-        ],
         'xcode_settings': {
           'OTHER_LDFLAGS': [
-            '-lssl',
-            '-lcrypto',
             '-llzma',
           ],
         },

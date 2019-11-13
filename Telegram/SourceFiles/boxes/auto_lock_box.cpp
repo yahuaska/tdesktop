@@ -12,6 +12,10 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "mainwindow.h"
 #include "ui/widgets/checkbox.h"
 #include "facades.h"
+<<<<<<< HEAD
+=======
+#include "styles/style_layers.h"
+>>>>>>> pr
 #include "styles/style_boxes.h"
 
 AutoLockBox::AutoLockBox(QWidget*, not_null<Main::Session*> session)

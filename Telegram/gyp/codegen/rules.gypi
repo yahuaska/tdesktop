@@ -6,6 +6,7 @@
 
 {
   'actions': [{
+<<<<<<< HEAD
     'action_name': 'update_dependent_qrc',
     'inputs': [
       '<(DEPTH)/update_dependent.py',
@@ -22,6 +23,8 @@
     ],
     'message': 'Updating dependent qrc files..',
   }, {
+=======
+>>>>>>> pr
     'action_name': 'codegen_lang',
     'inputs': [
       '<(PRODUCT_DIR)/codegen_lang<(exe_ext)',

@@ -19,7 +19,11 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "core/sandbox.h"
 #include "core/local_url_handlers.h"
 #include "core/launcher.h"
+<<<<<<< HEAD
 #include "core/core_ui_integration.h"
+=======
+#include "core/ui_integration.h"
+>>>>>>> pr
 #include "chat_helpers/emoji_keywords.h"
 #include "storage/localstorage.h"
 #include "platform/platform_specific.h"
@@ -727,6 +731,12 @@ QWidget *Application::getFileDialogParent() {
 		: activeWindow()
 		? (QWidget*)activeWindow()->widget()
 		: nullptr;
+}
+
+void Application::notifyFileDialogShown(bool shown) {
+	if (_mediaView) {
+		_mediaView->notifyFileDialogShown(shown);
+	}
 }
 
 void Application::checkMediaViewActivation() {

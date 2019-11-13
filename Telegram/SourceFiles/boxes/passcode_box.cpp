@@ -22,8 +22,13 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "passport/passport_encryption.h"
 #include "passport/passport_panel_edit_contact.h"
 #include "facades.h"
+<<<<<<< HEAD
 #include "styles/style_boxes.h"
+=======
+#include "styles/style_layers.h"
+>>>>>>> pr
 #include "styles/style_passport.h"
+#include "styles/style_boxes.h"
 
 namespace {
 
@@ -375,7 +380,7 @@ void PasscodeBox::validateEmail(
 						Lang::Hard::EmailConfirmationExpired());
 					weak->getDelegate()->show(
 						std::move(box),
-						LayerOption::CloseOther);
+						Ui::LayerOption::CloseOther);
 				}
 			} else {
 				errors->fire(Lang::Hard::ServerError());
@@ -531,7 +536,7 @@ void PasscodeBox::submitOnlyCheckCloudPassword(const QString &oldPassword) {
 	if (_cloudFields.turningOff && _cloudFields.notEmptyPassport) {
 		Assert(!_cloudFields.customCheckCallback);
 
-		const auto box = std::make_shared<QPointer<BoxContent>>();
+		const auto box = std::make_shared<QPointer<Ui::BoxContent>>();
 		const auto confirmed = [=] {
 			send();
 			if (*box) {
@@ -738,7 +743,7 @@ void PasscodeBox::changeCloudPassword(
 }
 
 void PasscodeBox::suggestSecretReset(const QString &newPassword) {
-	const auto box = std::make_shared<QPointer<BoxContent>>();
+	const auto box = std::make_shared<QPointer<Ui::BoxContent>>();
 	const auto resetSecretAndSave = [=] {
 		checkPasswordHash([=](const Core::CloudPasswordResult &check) {
 			resetSecret(check, newPassword, [=] {
@@ -990,7 +995,7 @@ void RecoverBox::submit() {
 			rpcFail(&RecoverBox::codeSubmitFail));
 	});
 	if (_notEmptyPassport) {
-		const auto box = std::make_shared<QPointer<BoxContent>>();
+		const auto box = std::make_shared<QPointer<Ui::BoxContent>>();
 		const auto confirmed = [=] {
 			send();
 			if (*box) {
@@ -1019,7 +1024,7 @@ void RecoverBox::codeSubmitDone(
 	_passwordCleared.fire({});
 	getDelegate()->show(
 		Box<InformBox>(tr::lng_cloud_password_removed(tr::now)),
-		LayerOption::CloseOther);
+		Ui::LayerOption::CloseOther);
 }
 
 bool RecoverBox::codeSubmitFail(const RPCError &error) {
@@ -1039,7 +1044,7 @@ bool RecoverBox::codeSubmitFail(const RPCError &error) {
 		_passwordCleared.fire({});
 		getDelegate()->show(
 			Box<InformBox>(tr::lng_cloud_password_removed(tr::now)),
-			LayerOption::CloseOther);
+			Ui::LayerOption::CloseOther);
 		return true;
 	} else if (err == qstr("PASSWORD_RECOVERY_NA")) {
 		closeBox();
@@ -1070,7 +1075,7 @@ RecoveryEmailValidation ConfirmRecoveryEmail(const QString &pattern) {
 	const auto errors = std::make_shared<rpl::event_stream<QString>>();
 	const auto resent = std::make_shared<rpl::event_stream<QString>>();
 	const auto requestId = std::make_shared<mtpRequestId>(0);
-	const auto weak = std::make_shared<QPointer<BoxContent>>();
+	const auto weak = std::make_shared<QPointer<Ui::BoxContent>>();
 	const auto reloads = std::make_shared<rpl::event_stream<>>();
 	const auto cancels = std::make_shared<rpl::event_stream<>>();
 
@@ -1084,7 +1089,7 @@ RecoveryEmailValidation ConfirmRecoveryEmail(const QString &pattern) {
 			if (*weak) {
 				(*weak)->getDelegate()->show(
 					Box<InformBox>(tr::lng_cloud_password_was_set(tr::now)),
-					LayerOption::CloseOther);
+					Ui::LayerOption::CloseOther);
 			}
 		};
 		const auto fail = [=](const RPCError &error) {
@@ -1105,7 +1110,7 @@ RecoveryEmailValidation ConfirmRecoveryEmail(const QString &pattern) {
 						Lang::Hard::EmailConfirmationExpired());
 					(*weak)->getDelegate()->show(
 						std::move(box),
-						LayerOption::CloseOther);
+						Ui::LayerOption::CloseOther);
 				}
 			} else {
 				errors->fire(Lang::Hard::ServerError());

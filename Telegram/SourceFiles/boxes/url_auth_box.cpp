@@ -20,6 +20,10 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "main/main_session.h"
 #include "apiwrap.h"
 #include "app.h"
+<<<<<<< HEAD
+=======
+#include "styles/style_layers.h"
+>>>>>>> pr
 #include "styles/style_boxes.h"
 
 void UrlAuthBox::Activate(
@@ -85,7 +89,7 @@ void UrlAuthBox::Request(
 	const auto bot = request.is_request_write_access()
 		? session->data().processUser(request.vbot()).get()
 		: nullptr;
-	const auto box = std::make_shared<QPointer<BoxContent>>();
+	const auto box = std::make_shared<QPointer<Ui::BoxContent>>();
 	const auto finishWithUrl = [=](const QString &url) {
 		if (*box) {
 			(*box)->closeBox();
@@ -122,7 +126,7 @@ void UrlAuthBox::Request(
 	};
 	*box = Ui::show(
 		Box<UrlAuthBox>(session, url, qs(request.vdomain()), bot, callback),
-		LayerOption::KeepOther);
+		Ui::LayerOption::KeepOther);
 }
 
 UrlAuthBox::UrlAuthBox(
