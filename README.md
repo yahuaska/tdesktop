@@ -1,7 +1,11 @@
 [![Build status](https://ci.appveyor.com/api/projects/status/y4ouiv0p9o168ht5/branch/build-dev?svg=true)](https://ci.appveyor.com/project/SlavikMIPT/tdesktop-9ooq7/branch/dev)
 # Telegram Desktop MediaTube – Based on Official Messenger
 
-Improved loading speeds.
+## Floating Video
+
+[![Preview of Floating Video][preview_image2]][preview_image2_url]
+
+## Improved loading speeds.
 
 [![Preview of Telegram Desktop][preview_image]][preview_image_url]
 
@@ -58,3 +62,5 @@ The source code is published under GPLv3 with OpenSSL exception, the license is 
 [cmake]: docs/building-cmake.md
 [preview_image]: https://github.com/mediatube/tdesktop/blob/dev/docs/assets/preview.gif "Preview of Telegram Desktop"
 [preview_image_url]: https://raw.githubusercontent.com/mediatube/tdesktop/dev/docs/assets/preview.gif
+[preview_image2]: https://github.com/mediatube/tdesktop/blob/dev/docs/assets/preview_float.gif "Preview of Floating Video"
+[preview_image2_url]: https://raw.githubusercontent.com/mediatube/tdesktop/dev/docs/assets/preview_float.gif
