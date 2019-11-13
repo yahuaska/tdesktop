@@ -170,11 +170,7 @@ void AppendFoundEmoji(
 		const std::vector<LangPackEmoji> &list) {
 	// It is important that the 'result' won't relocate while inserting.
 	result.reserve(result.size() + list.size());
-<<<<<<< HEAD
-	const auto alreadyBegin = result.data();
-=======
 	const auto alreadyBegin = begin(result);
->>>>>>> pr
 	const auto alreadyEnd = alreadyBegin + result.size();
 
 	auto &&add = ranges::view::all(

@@ -9,10 +9,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 #include "base/type_traits.h"
 #include "base/observer.h"
-<<<<<<< HEAD
-=======
 #include "base/call_delayed.h"
->>>>>>> pr
 #include "ui/effects/animation_value.h"
 
 class History;

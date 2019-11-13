@@ -7,13 +7,9 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #pragma once
 
-<<<<<<< HEAD:Telegram/SourceFiles/ui/main_queue_processor.h
-namespace Ui {
-=======
 #include "base/integration.h"
 
 namespace Core {
->>>>>>> pr:Telegram/SourceFiles/core/base_integration.h
 
 class BaseIntegration : public base::Integration {
 public:
@@ -25,4 +21,4 @@ public:
 
 };
 
-} // namespace Ui
+} // namespace Core

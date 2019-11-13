@@ -6,11 +6,6 @@
 
 {
   'includes': [
-<<<<<<< HEAD
-    'common/common.gypi',
-    'telegram/telegram.gypi',
-  ],
-=======
     'helpers/common/common.gypi',
   ],
   'targets': [{
@@ -143,5 +138,4 @@
       ],
     }]],
   }],
->>>>>>> pr
 }

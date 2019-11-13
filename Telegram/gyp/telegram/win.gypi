@@ -16,10 +16,7 @@
       '-lDbgHelp',
       '-lOpenAL32',
       '-lopus',
-<<<<<<< HEAD:Telegram/gyp/telegram/win.gypi
-=======
       '-lRstrtmgr',
->>>>>>> pr:Telegram/gyp/telegram_win.gypi
     ],
     'msvs_settings': {
       'VCLinkerTool': {

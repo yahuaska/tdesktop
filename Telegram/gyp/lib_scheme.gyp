@@ -6,23 +6,14 @@
 
 {
   'includes': [
-<<<<<<< HEAD
-    'common/common.gypi',
-=======
     'helpers/common/common.gypi',
->>>>>>> pr
   ],
   'targets': [{
     'target_name': 'lib_scheme',
     'hard_dependency': 1,
     'includes': [
-<<<<<<< HEAD
-      'common/library.gypi',
-      'modules/qt.gypi',
-=======
       'helpers/common/library.gypi',
       'helpers/modules/qt.gypi',
->>>>>>> pr
     ],
     'variables': {
       'src_loc': '../SourceFiles',
@@ -62,11 +53,7 @@
       ],
       'action': [
         'python', '<(src_loc)/codegen/scheme/codegen_scheme.py',
-<<<<<<< HEAD
-        '-o', '<(SHARED_INTERMEDIATE_DIR)',
-=======
         '-o', '<(SHARED_INTERMEDIATE_DIR)/scheme',
->>>>>>> pr
         '<(res_loc)/tl/mtproto.tl',
         '<(res_loc)/tl/api.tl',
       ],

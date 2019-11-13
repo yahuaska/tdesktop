@@ -10,13 +10,10 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/widgets/input_fields.h"
 #include "base/timer.h"
 #include "base/qt_connection.h"
-<<<<<<< HEAD
-=======
 
 #ifndef TDESKTOP_DISABLE_SPELLCHECK
 #include "spellcheck/spelling_highlighter.h"
 #endif // TDESKTOP_DISABLE_SPELLCHECK
->>>>>>> pr
 
 #include <QtGui/QClipboard>
 

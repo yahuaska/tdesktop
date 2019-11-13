@@ -35,16 +35,12 @@ Go to ***BuildPath*** and run
     mkdir Libraries
     cd Libraries
 
-<<<<<<< HEAD
-    git clone --branch 0.9.1 https://github.com/ericniebler/range-v3
-=======
     git clone https://github.com/Kitware/CMake cmake
     cd cmake
     git checkout v3.15.3
     ./bootstrap
     make $MAKE_THREADS_CNT
     sudo make install
->>>>>>> pr
 
     git clone https://github.com/desktop-app/patches.git
     cd patches

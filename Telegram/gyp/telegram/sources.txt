@@ -146,8 +146,6 @@
 <(src_loc)/core/core_cloud_password.h
 <(src_loc)/core/core_settings.cpp
 <(src_loc)/core/core_settings.h
-<(src_loc)/core/core_ui_integration.cpp
-<(src_loc)/core/core_ui_integration.h
 <(src_loc)/core/crash_report_window.cpp
 <(src_loc)/core/crash_report_window.h
 <(src_loc)/core/crash_reports.cpp
@@ -726,13 +724,6 @@
 <(src_loc)/support/support_helper.h
 <(src_loc)/support/support_templates.cpp
 <(src_loc)/support/support_templates.h
-<<<<<<< HEAD:Telegram/gyp/telegram/sources.txt
-<(src_loc)/ui/effects/fade_animation.cpp
-<(src_loc)/ui/effects/fade_animation.h
-<(src_loc)/ui/effects/radial_animation.cpp
-<(src_loc)/ui/effects/radial_animation.h
-=======
->>>>>>> pr:Telegram/gyp/telegram_sources.txt
 <(src_loc)/ui/effects/round_checkbox.cpp
 <(src_loc)/ui/effects/round_checkbox.h
 <(src_loc)/ui/effects/send_action_animations.cpp
@@ -743,15 +734,6 @@
 <(src_loc)/ui/image/image_location.h
 <(src_loc)/ui/image/image_source.cpp
 <(src_loc)/ui/image/image_source.h
-<<<<<<< HEAD:Telegram/gyp/telegram/sources.txt
-<(src_loc)/ui/toast/toast.cpp
-<(src_loc)/ui/toast/toast.h
-<(src_loc)/ui/toast/toast_manager.cpp
-<(src_loc)/ui/toast/toast_manager.h
-<(src_loc)/ui/toast/toast_widget.cpp
-<(src_loc)/ui/toast/toast_widget.h
-=======
->>>>>>> pr:Telegram/gyp/telegram_sources.txt
 <(src_loc)/ui/widgets/continuous_sliders.cpp
 <(src_loc)/ui/widgets/continuous_sliders.h
 <(src_loc)/ui/widgets/discrete_sliders.cpp

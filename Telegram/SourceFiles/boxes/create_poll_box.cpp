@@ -22,13 +22,9 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "history/view/history_view_schedule_box.h"
 #include "settings/settings_common.h"
 #include "base/unique_qptr.h"
-<<<<<<< HEAD
-#include "facades.h"
-=======
 #include "base/event_filter.h"
 #include "base/call_delayed.h"
 #include "styles/style_layers.h"
->>>>>>> pr
 #include "styles/style_boxes.h"
 #include "styles/style_settings.h"
 

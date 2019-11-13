@@ -25,11 +25,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "data/data_session.h"
 #include "main/main_session.h"
 #include "base/crc32hash.h"
-<<<<<<< HEAD
-=======
 #include "base/call_delayed.h"
 #include "ui/toast/toast.h"
->>>>>>> pr
 #include "ui/ui_utility.h"
 #include "apiwrap.h"
 #include "mainwindow.h"

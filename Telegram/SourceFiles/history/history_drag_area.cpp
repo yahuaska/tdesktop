@@ -22,11 +22,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "mainwidget.h"
 #include "app.h"
 #include "styles/style_chat_helpers.h"
-<<<<<<< HEAD
-#include "styles/style_boxes.h"
-=======
 #include "styles/style_layers.h"
->>>>>>> pr
 
 DragArea::DragArea(QWidget *parent) : TWidget(parent) {
 	setMouseTracking(true);

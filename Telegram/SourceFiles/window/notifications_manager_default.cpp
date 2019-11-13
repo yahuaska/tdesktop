@@ -24,17 +24,12 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "history/history.h"
 #include "history/history_item.h"
 #include "platform/platform_specific.h"
-<<<<<<< HEAD
-#include "facades.h"
-#include "app.h"
-=======
 #include "base/call_delayed.h"
 #include "facades.h"
 #include "app.h"
 #include "styles/style_dialogs.h"
 #include "styles/style_layers.h"
 #include "styles/style_window.h"
->>>>>>> pr
 
 #include <QtCore/QCoreApplication>
 

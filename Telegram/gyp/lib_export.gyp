@@ -6,34 +6,19 @@
 
 {
   'includes': [
-<<<<<<< HEAD
-    'common/common.gypi',
-=======
     'helpers/common/common.gypi',
->>>>>>> pr
   ],
   'targets': [{
     'target_name': 'lib_export',
     'type': 'static_library',
     'includes': [
-<<<<<<< HEAD
-      'common/library.gypi',
-      'modules/qt.gypi',
-      'modules/pch.gypi',
-=======
       'helpers/common/library.gypi',
       'helpers/modules/qt.gypi',
       'helpers/modules/pch.gypi',
->>>>>>> pr
     ],
     'variables': {
       'src_loc': '../SourceFiles',
       'res_loc': '../Resources',
-<<<<<<< HEAD
-      'official_build_target%': '',
-      'submodules_loc': '../ThirdParty',
-=======
->>>>>>> pr
       'pch_source': '<(src_loc)/export/export_pch.cpp',
       'pch_header': '<(src_loc)/export/export_pch.h',
     },

@@ -6,16 +6,11 @@
 
 {
   'includes': [
-<<<<<<< HEAD
-    '../common/executable.gypi',
-    '../modules/qt.gypi',
-=======
     '../helpers/common/executable.gypi',
     '../helpers/modules/qt.gypi',
   ],
   'dependencies': [
     '<(submodules_loc)/lib_base/lib_base.gyp:lib_base',
->>>>>>> pr
   ],
   'include_dirs': [
     '<(src_loc)',

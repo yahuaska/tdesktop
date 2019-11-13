@@ -12,10 +12,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "mtproto/auth_key.h"
 #include "base/unixtime.h"
 #include "base/openssl_help.h"
-<<<<<<< HEAD
-=======
 #include "base/call_delayed.h"
->>>>>>> pr
 #include "facades.h"
 
 #include <QtCore/QJsonDocument>
@@ -782,11 +779,7 @@ void DomainResolver::sendNextRequest(const AttemptKey &key) {
 	list.pop_back();
 
 	if (!list.empty()) {
-<<<<<<< HEAD
-		App::CallDelayed(kSendNextTimeout, &attempts.guard, [=] {
-=======
 		base::call_delayed(kSendNextTimeout, &attempts.guard, [=] {
->>>>>>> pr
 			sendNextRequest(key);
 		});
 	}

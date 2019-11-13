@@ -22,11 +22,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "core/file_utilities.h"
 #include "core/click_handler_types.h"
 #include "app.h"
-<<<<<<< HEAD
-#include "styles/style_boxes.h"
-=======
 #include "styles/style_layers.h"
->>>>>>> pr
 
 namespace Lang {
 namespace {

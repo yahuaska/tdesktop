@@ -40,12 +40,9 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "observer_peer.h"
 #include "main/main_session.h"
 #include "facades.h"
-<<<<<<< HEAD
-=======
 #include "styles/style_layers.h"
 #include "styles/style_boxes.h"
 #include "styles/style_dialogs.h"
->>>>>>> pr
 
 #include <QtGui/QGuiApplication>
 #include <QtGui/QClipboard>

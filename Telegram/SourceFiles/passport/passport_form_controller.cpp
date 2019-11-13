@@ -29,10 +29,6 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "storage/localstorage.h"
 #include "storage/file_upload.h"
 #include "storage/file_download.h"
-<<<<<<< HEAD
-#include "facades.h"
-=======
->>>>>>> pr
 #include "app.h"
 
 #include <QtCore/QJsonDocument>

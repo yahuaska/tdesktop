@@ -9,13 +9,10 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 #include "platform/platform_window_title.h"
 #include "base/object_ptr.h"
-<<<<<<< HEAD
-=======
 
 namespace style {
 struct WindowTitle;
 } // namespace style
->>>>>>> pr
 
 namespace Ui {
 class IconButton;

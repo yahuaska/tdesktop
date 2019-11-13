@@ -30,10 +30,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "observer_peer.h"
 #include "apiwrap.h"
 #include "facades.h"
-<<<<<<< HEAD
-=======
 #include "styles/style_layers.h"
->>>>>>> pr
 #include "styles/style_boxes.h"
 
 namespace Main {

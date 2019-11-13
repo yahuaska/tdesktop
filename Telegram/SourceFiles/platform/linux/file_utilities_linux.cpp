@@ -13,11 +13,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "mainwindow.h"
 #include "boxes/abstract_box.h"
 #include "storage/localstorage.h"
-<<<<<<< HEAD
-=======
 #include "base/platform/base_platform_file_utilities.h"
 #include "base/call_delayed.h"
->>>>>>> pr
 #include "facades.h"
 
 #include <QtCore/QProcess>

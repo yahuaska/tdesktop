@@ -15,11 +15,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "storage/localstorage.h"
 #include "mainwindow.h"
 #include "history/history_location_manager.h"
-<<<<<<< HEAD
-#include "platform/mac/mac_utilities.h"
-=======
 #include "base/platform/mac/base_utilities_mac.h"
->>>>>>> pr
 #include "facades.h"
 
 #include <QtGui/QDesktopServices>

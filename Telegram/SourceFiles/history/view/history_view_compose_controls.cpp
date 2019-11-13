@@ -11,12 +11,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/special_buttons.h"
 #include "ui/ui_utility.h"
 #include "lang/lang_keys.h"
-<<<<<<< HEAD
-#include "core/event_filter.h"
-=======
 #include "base/event_filter.h"
 #include "base/call_delayed.h"
->>>>>>> pr
 #include "base/qt_signal_producer.h"
 #include "history/history.h"
 #include "chat_helpers/tabbed_panel.h"

@@ -7,10 +7,6 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #pragma once
 
-<<<<<<< HEAD
-class GenericBox;
-=======
->>>>>>> pr
 class History;
 
 namespace Ui {

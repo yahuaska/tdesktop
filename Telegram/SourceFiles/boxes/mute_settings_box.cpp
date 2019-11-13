@@ -15,10 +15,7 @@ Copyright (C) 2017, Nicholas Guriev <guriev-ns@ya.ru>
 #include "ui/widgets/checkbox.h"
 #include "ui/widgets/labels.h"
 #include "app.h"
-<<<<<<< HEAD
-=======
 #include "styles/style_layers.h"
->>>>>>> pr
 #include "styles/style_boxes.h"
 
 namespace {

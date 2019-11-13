@@ -15,10 +15,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/widgets/buttons.h"
 #include "ui/widgets/shadow.h"
 #include "ui/widgets/tooltip.h"
-<<<<<<< HEAD
-=======
 #include "ui/layers/layer_widget.h"
->>>>>>> pr
 #include "ui/emoji_config.h"
 #include "ui/ui_utility.h"
 #include "lang/lang_cloud_manager.h"
@@ -51,12 +48,9 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "window/window_media_preview.h"
 #include "facades.h"
 #include "app.h"
-<<<<<<< HEAD
-=======
 #include "styles/style_dialogs.h"
 #include "styles/style_layers.h"
 #include "styles/style_window.h"
->>>>>>> pr
 
 #include <QtGui/QWindow>
 #include <QtCore/QCoreApplication>

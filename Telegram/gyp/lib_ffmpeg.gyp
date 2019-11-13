@@ -6,31 +6,17 @@
 
 {
   'includes': [
-<<<<<<< HEAD
-    'common/common.gypi',
-=======
     'helpers/common/common.gypi',
->>>>>>> pr
   ],
   'targets': [{
     'target_name': 'lib_ffmpeg',
     'includes': [
-<<<<<<< HEAD
-      'common/library.gypi',
-      'modules/qt.gypi',
-=======
       'helpers/common/library.gypi',
       'helpers/modules/qt.gypi',
->>>>>>> pr
     ],
     'variables': {
       'src_loc': '../SourceFiles',
       'res_loc': '../Resources',
-<<<<<<< HEAD
-      'official_build_target%': '',
-      'submodules_loc': '../ThirdParty',
-=======
->>>>>>> pr
     },
     'dependencies': [
       '<(submodules_loc)/lib_base/lib_base.gyp:lib_base',

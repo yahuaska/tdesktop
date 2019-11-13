@@ -140,11 +140,7 @@ private:
 };
 
 class SetupChannelBox
-<<<<<<< HEAD
-	: public BoxContent
-=======
 	: public Ui::BoxContent
->>>>>>> pr
 	, public RPCSender
 	, private base::Subscriber {
 public:
@@ -242,11 +238,7 @@ private:
 };
 
 class RevokePublicLinkBox
-<<<<<<< HEAD
-	: public BoxContent
-=======
 	: public Ui::BoxContent
->>>>>>> pr
 	, public RPCSender
 	, private base::Subscriber {
 public:

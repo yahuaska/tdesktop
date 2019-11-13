@@ -7,13 +7,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #pragma once
 
-<<<<<<< HEAD
-#include "window/layer_widget.h"
-
-class BoxContent;
-=======
 #include "ui/layers/layer_widget.h"
->>>>>>> pr
 
 namespace Ui {
 class RpWidget;

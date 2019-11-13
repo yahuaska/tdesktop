@@ -22,11 +22,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "passport/passport_encryption.h"
 #include "passport/passport_panel_edit_contact.h"
 #include "facades.h"
-<<<<<<< HEAD
-#include "styles/style_boxes.h"
-=======
 #include "styles/style_layers.h"
->>>>>>> pr
 #include "styles/style_passport.h"
 #include "styles/style_boxes.h"
 

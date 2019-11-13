@@ -17,11 +17,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/toast/toast.h"
 #include "ui/widgets/tooltip.h"
 #include "ui/platform/ui_platform_utility.h"
-<<<<<<< HEAD
-#include "window/layer_widget.h"
-=======
 #include "ui/layers/layer_widget.h"
->>>>>>> pr
 #include "window/themes/window_theme.h"
 #include "core/application.h"
 #include "app.h"

@@ -9,14 +9,9 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 #include "platform/platform_launcher.h"
 #include "platform/platform_specific.h"
-<<<<<<< HEAD
-#include "platform/platform_info.h"
-#include "ui/main_queue_processor.h"
-=======
 #include "base/platform/base_platform_info.h"
 #include "ui/main_queue_processor.h"
 #include "ui/ui_utility.h"
->>>>>>> pr
 #include "core/crash_reports.h"
 #include "core/update_checker.h"
 #include "core/sandbox.h"

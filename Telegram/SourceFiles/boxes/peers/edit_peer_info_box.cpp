@@ -45,12 +45,9 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "info/profile/info_profile_icon.h"
 #include "app.h"
 #include "facades.h"
-<<<<<<< HEAD
-=======
 #include "styles/style_layers.h"
 #include "styles/style_boxes.h"
 #include "styles/style_info.h"
->>>>>>> pr
 
 namespace {
 

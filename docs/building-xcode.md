@@ -31,8 +31,6 @@ Go to ***BuildPath*** and run
     mkdir ThirdParty
     cd ThirdParty
 
-<<<<<<< HEAD
-=======
     git clone https://github.com/desktop-app/patches.git
     cd patches
     git checkout 4aa377c
@@ -54,7 +52,6 @@ Go to ***BuildPath*** and run
     cd patches
     git checkout 4aa377c
     cd ../
->>>>>>> pr
     git clone --branch 0.9.1 https://github.com/ericniebler/range-v3
 
     cd xz-5.0.5

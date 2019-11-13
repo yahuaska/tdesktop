@@ -34,11 +34,7 @@ class Session;
 } // namespace Main
 
 class StickersBox final
-<<<<<<< HEAD
-	: public BoxContent
-=======
 	: public Ui::BoxContent
->>>>>>> pr
 	, public RPCSender
 	, private base::Subscriber {
 public:

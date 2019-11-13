@@ -20,10 +20,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "data/data_session.h"
 #include "data/data_user.h"
 #include "app.h"
-<<<<<<< HEAD
-=======
 #include "styles/style_layers.h"
->>>>>>> pr
 #include "styles/style_boxes.h"
 
 namespace {

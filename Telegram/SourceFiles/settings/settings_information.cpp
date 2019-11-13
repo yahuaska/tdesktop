@@ -29,15 +29,9 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "window/window_session_controller.h"
 #include "apiwrap.h"
 #include "core/file_utilities.h"
-<<<<<<< HEAD
-#include "facades.h"
-#include "app.h"
-#include "styles/style_boxes.h"
-=======
 #include "base/call_delayed.h"
 #include "app.h"
 #include "styles/style_layers.h"
->>>>>>> pr
 #include "styles/style_settings.h"
 
 #include <QtGui/QGuiApplication>

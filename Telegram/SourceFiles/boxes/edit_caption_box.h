@@ -36,11 +36,7 @@ class SessionController;
 } // namespace Window
 
 class EditCaptionBox
-<<<<<<< HEAD
-	: public BoxContent
-=======
 	: public Ui::BoxContent
->>>>>>> pr
 	, public RPCSender
 	, private base::Subscriber {
 public:

@@ -49,10 +49,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "data/data_cloud_themes.h"
 #include "base/platform/base_platform_info.h"
 #include "base/unixtime.h"
-<<<<<<< HEAD
-=======
 #include "base/call_delayed.h"
->>>>>>> pr
 #include "facades.h"
 #include "app.h"
 #include "styles/style_boxes.h" // st::backgroundSize

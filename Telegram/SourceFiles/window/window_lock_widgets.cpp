@@ -24,11 +24,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "window/window_session_controller.h"
 #include "main/main_account.h"
 #include "facades.h"
-<<<<<<< HEAD
-=======
 #include "styles/style_layers.h"
 #include "styles/style_boxes.h"
->>>>>>> pr
 
 namespace Window {
 

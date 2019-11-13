@@ -6,11 +6,7 @@
 
 {
   'includes': [
-<<<<<<< HEAD
-    'common/common.gypi',
-=======
     'helpers/common/common.gypi',
->>>>>>> pr
   ],
   'targets': [{
     'target_name': 'Updater',
@@ -19,11 +15,7 @@
       'res_loc': '../Resources',
     },
     'includes': [
-<<<<<<< HEAD
-      'common/executable.gypi',
-=======
       'helpers/common/executable.gypi',
->>>>>>> pr
     ],
 
     'include_dirs': [
@@ -68,14 +60,9 @@
       'mac_target': '10.12',
     },
     'includes': [
-<<<<<<< HEAD
-      'common/executable.gypi',
-      'modules/qt.gypi',
-=======
       'helpers/common/executable.gypi',
       'helpers/modules/qt.gypi',
       'helpers/modules/openssl.gypi',
->>>>>>> pr
     ],
     'conditions': [
       [ 'build_win', {

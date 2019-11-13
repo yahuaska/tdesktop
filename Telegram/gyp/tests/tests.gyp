@@ -6,11 +6,7 @@
 
 {
   'includes': [
-<<<<<<< HEAD
-    '../common/common.gypi',
-=======
     '../helpers/common/common.gypi',
->>>>>>> pr
   ],
   'variables': {
     'src_loc': '../../SourceFiles',
@@ -23,11 +19,7 @@
     'target_name': 'tests',
     'type': 'none',
     'includes': [
-<<<<<<< HEAD
-      '../common/common.gypi',
-=======
       '../helpers/common/common.gypi',
->>>>>>> pr
     ],
     'dependencies': [
       '<!@(<(list_tests_command))',
@@ -130,11 +122,7 @@
     'target_name': 'tests_storage',
     'includes': [
       'common_test.gypi',
-<<<<<<< HEAD
-      '../modules/openssl.gypi',
-=======
       '../helpers/modules/openssl.gypi',
->>>>>>> pr
     ],
     'dependencies': [
       '../lib_storage.gyp:lib_storage',

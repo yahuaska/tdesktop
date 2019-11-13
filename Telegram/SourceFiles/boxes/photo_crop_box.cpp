@@ -11,10 +11,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/widgets/buttons.h"
 #include "ui/ui_utility.h"
 #include "app.h"
-<<<<<<< HEAD
-=======
 #include "styles/style_layers.h"
->>>>>>> pr
 #include "styles/style_boxes.h"
 
 PhotoCropBox::PhotoCropBox(

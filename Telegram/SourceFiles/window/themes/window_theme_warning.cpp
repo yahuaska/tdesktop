@@ -13,11 +13,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "window/themes/window_theme.h"
 #include "lang/lang_keys.h"
 #include "app.h"
-<<<<<<< HEAD
-=======
 #include "styles/style_layers.h"
 #include "styles/style_boxes.h"
->>>>>>> pr
 
 namespace Window {
 namespace Theme {

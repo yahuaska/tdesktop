@@ -6,25 +6,6 @@
 
 {
   'actions': [{
-<<<<<<< HEAD
-    'action_name': 'update_dependent_qrc',
-    'inputs': [
-      '<(DEPTH)/update_dependent.py',
-      '<@(qrc_files)',
-      '<!@(python <(DEPTH)/update_dependent.py --qrc_list <@(qrc_files))',
-    ],
-    'outputs': [
-      '<(SHARED_INTERMEDIATE_DIR)/update_dependent_qrc.timestamp',
-    ],
-    'action': [
-      'python', '<(DEPTH)/update_dependent.py', '--qrc',
-      '-o', '<(SHARED_INTERMEDIATE_DIR)/update_dependent_qrc.timestamp',
-      '<@(qrc_files)',
-    ],
-    'message': 'Updating dependent qrc files..',
-  }, {
-=======
->>>>>>> pr
     'action_name': 'codegen_lang',
     'inputs': [
       '<(PRODUCT_DIR)/codegen_lang<(exe_ext)',

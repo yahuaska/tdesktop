@@ -39,13 +39,10 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "confirm_box.h"
 #include "facades.h"
 #include "app.h"
-<<<<<<< HEAD
-=======
 #include "styles/style_layers.h"
 #include "styles/style_boxes.h"
 #include "styles/style_chat_helpers.h"
 #include "styles/style_history.h"
->>>>>>> pr
 
 #include <QtCore/QMimeData>
 

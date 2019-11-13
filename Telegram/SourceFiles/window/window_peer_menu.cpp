@@ -47,10 +47,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "dialogs/dialogs_key.h"
 #include "boxes/peers/edit_peer_info_box.h"
 #include "facades.h"
-<<<<<<< HEAD
-=======
 #include "styles/style_layers.h"
->>>>>>> pr
 #include "styles/style_boxes.h"
 #include "styles/style_window.h" // st::windowMinWidth
 
