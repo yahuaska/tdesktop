@@ -16,8 +16,12 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "core/application.h"
 #include "lang/lang_keys.h"
 #include "storage/localstorage.h"
-#include <vector>
+#include "facades.h"
+#include "app.h"
+
 #include <QtDBus>
+#include <QtWidgets/QMenu>
+#include <QtWidgets/QAction>
 
 namespace Platform {
 namespace {
@@ -581,8 +585,6 @@ void MainWindow::psFirstShow() {
 		LOG(("Not using Unity Launcher count."));
 	}
 
-	psUpdateMargins();
-
 	bool showShadows = true;
 
 	show();
@@ -605,12 +607,6 @@ void MainWindow::psFirstShow() {
 	}
 
 	setPositionInited();
-}
-
-void MainWindow::psInitSysMenu() {
-}
-
-void MainWindow::psUpdateMargins() {
 }
 
 MainWindow::~MainWindow() {

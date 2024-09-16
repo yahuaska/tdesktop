@@ -19,6 +19,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "core/sandbox.h"
 #include "core/local_url_handlers.h"
 #include "core/launcher.h"
+#include "core/ui_integration.h"
 #include "chat_helpers/emoji_keywords.h"
 #include "storage/localstorage.h"
 #include "platform/platform_specific.h"
@@ -61,6 +62,13 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "boxes/confirm_phone_box.h"
 #include "boxes/confirm_box.h"
 #include "boxes/share_box.h"
+#include "facades.h"
+#include "app.h"
+
+#include <QtWidgets/QDesktopWidget>
+#include <QtCore/QMimeDatabase>
+#include <QtGui/QGuiApplication>
+#include <QtGui/QDesktopServices>
 
 namespace Core {
 namespace {
@@ -73,6 +81,7 @@ Application *Application::Instance = nullptr;
 
 struct Application::Private {
 	base::Timer quitTimer;
+	UiIntegration uiIntegration;
 };
 
 Application::Application(not_null<Launcher*> launcher)
@@ -90,6 +99,8 @@ Application::Application(not_null<Launcher*> launcher)
 , _logoNoMargin(Window::LoadLogoNoMargin()) {
 	Expects(!_logo.isNull());
 	Expects(!_logoNoMargin.isNull());
+
+	Ui::Integration::Set(&_private->uiIntegration);
 
 	activeAccount().sessionChanges(
 	) | rpl::start_with_next([=] {
@@ -138,7 +149,7 @@ Application::~Application() {
 	stopWebLoadManager();
 	App::deinitMedia();
 
-	Window::Theme::Unload();
+	Window::Theme::Uninitialize();
 
 	Media::Player::finish(_audio.get());
 	style::stopManager();
@@ -150,13 +161,14 @@ Application::~Application() {
 }
 
 void Application::run() {
-	Fonts::Start();
+	style::internal::StartFonts();
 
 	ThirdParty::start();
 	Global::start();
 	refreshGlobalProxy(); // Depends on Global::started().
 
 	startLocalStorage();
+	ValidateScale();
 
 	if (Local::oldSettingsVersion() < AppVersion) {
 		psNewVersion();
@@ -171,10 +183,19 @@ void Application::run() {
 	_translator = std::make_unique<Lang::Translator>();
 	QCoreApplication::instance()->installTranslator(_translator.get());
 
-	style::startManager();
+	style::startManager(cScale());
 	Ui::InitTextOptions();
 	Ui::Emoji::Init();
 	Media::Player::start(_audio.get());
+
+	style::ShortAnimationPlaying(
+	) | rpl::start_with_next([=](bool playing) {
+		if (playing) {
+			MTP::internal::pause();
+		} else {
+			MTP::internal::unpause();
+		}
+	}, _lifetime);
 
 	DEBUG_LOG(("Application Info: inited..."));
 
@@ -279,6 +300,14 @@ void Application::showDocument(not_null<DocumentData*> document, HistoryItem *it
 	}
 }
 
+void Application::showTheme(
+		not_null<DocumentData*> document,
+		const Data::CloudTheme &cloud) {
+	_mediaView->showTheme(document, cloud);
+	_mediaView->activateWindow();
+	_mediaView->setFocus();
+}
+
 PeerData *Application::ui_getPeerForMouseAction() {
 	if (_mediaView && !_mediaView->isHidden()) {
 		return _mediaView->ui_getPeerForMouseAction();
@@ -336,6 +365,10 @@ bool Application::eventFilter(QObject *object, QEvent *e) {
 	return QObject::eventFilter(object, e);
 }
 
+void Application::saveSettingsDelayed(crl::time delay) {
+	_saveSettingsTimer.callOnce(delay);
+}
+
 void Application::setCurrentProxy(
 		const ProxyData &proxy,
 		ProxyData::Settings settings) {
@@ -381,6 +414,7 @@ void Application::startLocalStorage() {
 			}
 		}
 	});
+	_saveSettingsTimer.setCallback([=] { Local::writeSettings(); });
 }
 
 void Application::forceLogOut(const TextWithEntities &explanation) {
@@ -695,6 +729,12 @@ QWidget *Application::getFileDialogParent() {
 		: nullptr;
 }
 
+void Application::notifyFileDialogShown(bool shown) {
+	if (_mediaView) {
+		_mediaView->notifyFileDialogShown(shown);
+	}
+}
+
 void Application::checkMediaViewActivation() {
 	if (_mediaView && !_mediaView->isHidden()) {
 		_mediaView->activateWindow();
@@ -711,11 +751,11 @@ QPoint Application::getPointForCallPanelCenter() const {
 }
 
 // macOS Qt bug workaround, sometimes no leaveEvent() gets to the nested widgets.
-void Application::registerLeaveSubscription(QWidget *widget) {
+void Application::registerLeaveSubscription(not_null<QWidget*> widget) {
 #ifdef Q_OS_MAC
 	if (const auto topLevel = widget->window()) {
 		if (topLevel == _window->widget()) {
-			auto weak = make_weak(widget);
+			auto weak = Ui::MakeWeak(widget);
 			auto subscription = _window->widget()->leaveEvents(
 			) | rpl::start_with_next([weak] {
 				if (const auto window = weak.data()) {
@@ -729,7 +769,7 @@ void Application::registerLeaveSubscription(QWidget *widget) {
 #endif // Q_OS_MAC
 }
 
-void Application::unregisterLeaveSubscription(QWidget *widget) {
+void Application::unregisterLeaveSubscription(not_null<QWidget*> widget) {
 #ifdef Q_OS_MAC
 	_leaveSubscriptions = std::move(
 		_leaveSubscriptions
@@ -746,25 +786,6 @@ void Application::postponeCall(FnMut<void()> &&callable) {
 
 void Application::refreshGlobalProxy() {
 	Sandbox::Instance().refreshGlobalProxy();
-}
-
-void Application::activateWindowDelayed(not_null<QWidget*> widget) {
-	Sandbox::Instance().activateWindowDelayed(widget);
-}
-
-void Application::pauseDelayedWindowActivations() {
-	Sandbox::Instance().pauseDelayedWindowActivations();
-}
-
-void Application::resumeDelayedWindowActivations() {
-	Sandbox::Instance().resumeDelayedWindowActivations();
-}
-
-void Application::preventWindowActivation() {
-	pauseDelayedWindowActivations();
-	postponeCall([=] {
-		resumeDelayedWindowActivations();
-	});
 }
 
 void Application::QuitAttempt() {

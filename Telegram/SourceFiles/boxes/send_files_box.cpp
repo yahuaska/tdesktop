@@ -15,9 +15,10 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "chat_helpers/emoji_suggestions_widget.h"
 #include "chat_helpers/tabbed_panel.h"
 #include "chat_helpers/tabbed_selector.h"
+#include "history/view/history_view_schedule_box.h"
 #include "core/file_utilities.h"
 #include "core/mime_type.h"
-#include "core/event_filter.h"
+#include "base/event_filter.h"
 #include "ui/effects/animations.h"
 #include "ui/widgets/checkbox.h"
 #include "ui/widgets/buttons.h"
@@ -30,11 +31,17 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "lottie/lottie_single_player.h"
 #include "data/data_document.h"
 #include "media/clip/media_clip_reader.h"
+#include "api/api_common.h"
 #include "window/window_session_controller.h"
 #include "layout.h"
+#include "facades.h"
+#include "app.h"
 #include "styles/style_history.h"
+#include "styles/style_layers.h"
 #include "styles/style_boxes.h"
 #include "styles/style_chat_helpers.h"
+
+#include <QtCore/QMimeData>
 
 namespace {
 
@@ -894,7 +901,7 @@ void SingleFilePreview::paintEvent(QPaintEvent *e) {
 	App::roundRect(p, x, y, w, h, st::msgOutBg, MessageOutCorners, &st::msgOutShadow);
 
 	if (_fileThumb.isNull()) {
-		QRect inner(rtlrect(x + st::msgFilePadding.left(), y + st::msgFilePadding.top(), st::msgFileSize, st::msgFileSize, width()));
+		QRect inner(style::rtlrect(x + st::msgFilePadding.left(), y + st::msgFilePadding.top(), st::msgFileSize, st::msgFileSize, width()));
 		p.setPen(Qt::NoPen);
 		p.setBrush(st::msgFileOutBg);
 
@@ -910,7 +917,7 @@ void SingleFilePreview::paintEvent(QPaintEvent *e) {
 			: st::historyFileOutDocument;
 		icon.paintInCenter(p, inner);
 	} else {
-		QRect rthumb(rtlrect(x + st::msgFileThumbPadding.left(), y + st::msgFileThumbPadding.top(), st::msgFileThumbSize, st::msgFileThumbSize, width()));
+		QRect rthumb(style::rtlrect(x + st::msgFileThumbPadding.left(), y + st::msgFileThumbPadding.top(), st::msgFileThumbSize, st::msgFileThumbSize, width()));
 		p.drawPixmap(rthumb.topLeft(), _fileThumb);
 	}
 	p.setFont(st::semiboldFont);
@@ -1366,12 +1373,16 @@ SendFilesBox::SendFilesBox(
 	Storage::PreparedList &&list,
 	const TextWithTags &caption,
 	CompressConfirm compressed,
-	SendLimit limit)
+	SendLimit limit,
+	Api::SendType sendType,
+	SendMenuType sendMenuType)
 : _controller(controller)
+, _sendType(sendType)
 , _list(std::move(list))
 , _compressConfirmInitial(compressed)
 , _compressConfirm(compressed)
 , _sendLimit(limit)
+, _sendMenuType(sendMenuType)
 , _caption(
 	this,
 	st::confirmCaptionArea,
@@ -1425,7 +1436,7 @@ void SendFilesBox::prepareAlbumPreview() {
 
 	const auto wrap = Ui::CreateChild<Ui::ScrollArea>(
 		this,
-		st::boxLayerScroll);
+		st::boxScroll);
 	_albumPreview = wrap->setOwnedWidget(object_ptr<AlbumPreview>(
 		this,
 		_list,
@@ -1454,7 +1465,7 @@ void SendFilesBox::setupShadows(
 		bottomShadow->move(
 			geometry.x(),
 			geometry.y() + geometry.height() - st::lineWidth);
-	}, [t = make_weak(topShadow), b = make_weak(bottomShadow)] {
+	}, [t = Ui::MakeWeak(topShadow), b = Ui::MakeWeak(bottomShadow)] {
 		Ui::DestroyChild(t.data());
 		Ui::DestroyChild(b.data());
 	}, topShadow->lifetime());
@@ -1468,8 +1479,14 @@ void SendFilesBox::setupShadows(
 }
 
 void SendFilesBox::prepare() {
-	_send = addButton(tr::lng_send_button(), [=] { send(); });
-	SetupSendWithoutSound(_send, [=] { return true; }, [=] { send(true); });
+	_send = addButton(tr::lng_send_button(), [=] { send({}); });
+	if (_sendType == Api::SendType::Normal) {
+		SetupSendMenu(
+			_send,
+			[=] { return _sendMenuType; },
+			[=] { sendSilent(); },
+			[=] { sendScheduled(); });
+	}
 	addButton(tr::lng_cancel(), [=] { closeBox(); });
 	initSendWay();
 	setupCaption();
@@ -1638,7 +1655,7 @@ void SendFilesBox::setupCaption() {
 		const auto ctrlShiftEnter = modifiers.testFlag(Qt::ShiftModifier)
 			&& (modifiers.testFlag(Qt::ControlModifier)
 				|| modifiers.testFlag(Qt::MetaModifier));
-		send(false, ctrlShiftEnter);
+		send({}, ctrlShiftEnter);
 	});
 	connect(_caption, &Ui::InputField::cancelled, [=] { closeBox(); });
 	_caption->setMimeDataHook([=](
@@ -1662,6 +1679,8 @@ void SendFilesBox::setupCaption() {
 		_caption,
 		&_controller->session());
 
+	InitSpellchecker(&_controller->session(), _caption);
+
 	updateCaptionPlaceholder();
 	setupEmojiPanel();
 }
@@ -1682,14 +1701,16 @@ void SendFilesBox::setupEmojiPanel() {
 		st::emojiPanMinHeight / 2,
 		st::emojiPanMinHeight);
 	_emojiPanel->hide();
-	_emojiPanel->getSelector()->emojiChosen(
+	_emojiPanel->selector()->emojiChosen(
 	) | rpl::start_with_next([=](EmojiPtr emoji) {
 		Ui::InsertEmojiAtCursor(_caption->textCursor(), emoji);
 	}, lifetime());
 
-	_emojiFilter.reset(Core::InstallEventFilter(
-		container,
-		[=](not_null<QEvent*> event) { return emojiFilter(event); }));
+	const auto filterCallback = [=](not_null<QEvent*> event) {
+		emojiFilterForGeometry(event);
+		return base::EventFilterResult::Continue;
+	};
+	_emojiFilter.reset(base::install_event_filter(container, filterCallback));
 
 	_emojiToggle.create(this, st::boxAttachEmoji);
 	_emojiToggle->setVisible(!_caption->isHidden());
@@ -1699,14 +1720,13 @@ void SendFilesBox::setupEmojiPanel() {
 	});
 }
 
-bool SendFilesBox::emojiFilter(not_null<QEvent*> event) {
+void SendFilesBox::emojiFilterForGeometry(not_null<QEvent*> event) {
 	const auto type = event->type();
 	if (type == QEvent::Move || type == QEvent::Resize) {
 		// updateEmojiPanelGeometry uses not only container geometry, but
 		// also container children geometries that will be updated later.
 		crl::on_main(this, [=] { updateEmojiPanelGeometry(); });
 	}
-	return false;
 }
 
 void SendFilesBox::updateEmojiPanelGeometry() {
@@ -1842,7 +1862,7 @@ void SendFilesBox::keyPressEvent(QKeyEvent *e) {
 		const auto ctrl = modifiers.testFlag(Qt::ControlModifier)
 			|| modifiers.testFlag(Qt::MetaModifier);
 		const auto shift = modifiers.testFlag(Qt::ShiftModifier);
-		send(false, ctrl && shift);
+		send({}, ctrl && shift);
 	} else {
 		BoxContent::keyPressEvent(e);
 	}
@@ -1913,7 +1933,13 @@ void SendFilesBox::setInnerFocus() {
 	}
 }
 
-void SendFilesBox::send(bool silent, bool ctrlShiftEnter) {
+void SendFilesBox::send(
+		Api::SendOptions options,
+		bool ctrlShiftEnter) {
+	if (_sendType == Api::SendType::Scheduled && !options.scheduled) {
+		return sendScheduled();
+	}
+
 	using Way = SendFilesWay;
 	const auto way = _sendWay ? _sendWay->value() : Way::Files;
 
@@ -1942,10 +1968,23 @@ void SendFilesBox::send(bool silent, bool ctrlShiftEnter) {
 			std::move(_list),
 			way,
 			std::move(caption),
-			silent,
+			options,
 			ctrlShiftEnter);
 	}
 	closeBox();
+}
+
+void SendFilesBox::sendSilent() {
+	auto options = Api::SendOptions();
+	options.silent = true;
+	send(options);
+}
+
+void SendFilesBox::sendScheduled() {
+	const auto callback = [=](Api::SendOptions options) { send(options); };
+	Ui::show(
+		HistoryView::PrepareScheduleBox(this, _sendMenuType, callback),
+		Ui::LayerOption::KeepOther);
 }
 
 SendFilesBox::~SendFilesBox() = default;

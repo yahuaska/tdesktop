@@ -6,7 +6,7 @@ For license and copyright information please follow this link:
 https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 
-using "basic.style";
+using "ui/basic.style";
 using "ui/widgets/widgets.style";
 
 mediaviewOverDuration: 150;
@@ -24,12 +24,12 @@ mediaviewPlayback: MediaSlider {
 	duration: mediaviewOverDuration;
 }
 
-mediaviewControllerSize: size(600px, 50px);
+mediaviewControllerSize: size(450px, 40px);
 mediaviewPlayProgressLabel: LabelSimple(defaultLabelSimple) {
 	font: semiboldFont;
 	textFg: mediaviewPlaybackProgressFg;
 }
-mediaviewPlayProgressTop: 11px;
+mediaviewPlayProgressTop: 5px;
 mediaviewPlayButton: IconButton {
 	width: 25px;
 	height: 24px;
@@ -54,10 +54,10 @@ mediaviewFullScreenButton: IconButton(mediaviewPlayButton) {
 mediaviewFullScreenOutIcon: icon {{ "media_fullscreen_from", mediaviewPlaybackIconFg, point(0px, 0px) }};
 mediaviewFullScreenOutIconOver: icon {{ "media_fullscreen_from", mediaviewPlaybackIconFgOver, point(0px, 0px) }};
 
-mediaviewPlaybackTop: 28px;
+mediaviewPlaybackTop: 18px;
 
 mediaviewVolumeWidth: 60px;
-mediaviewControllerRadius: 25px;
+mediaviewControllerRadius: 20px;
 
 mediaviewLeft: icon {{ "mediaview_next-flip_horizontal", mediaviewControlFg }};
 mediaviewRight: icon {{ "mediaview_next", mediaviewControlFg }};
@@ -196,8 +196,8 @@ mediaviewStreamingRadial: InfiniteRadialAnimation(defaultInfiniteRadialAnimation
 themePreviewSize: size(903px, 584px);
 themePreviewBg: windowBg;
 themePreviewOverlayOpacity: 0.8;
-themePreviewMargin: margins(36px, 52px, 36px, 88px);
-themePreviewTitleTop: 14px;
+themePreviewMargin: margins(36px, 72px, 36px, 88px);
+themePreviewTitleTop: 24px;
 themePreviewTitleFg: windowBoldFg;
 themePreviewTitleFont: font(17px semibold);
 themePreviewLoadingFont: font(16px);

@@ -11,7 +11,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "settings.h"
 
 constexpr str_const AppNameOld = "Telegram Win (Unofficial)";
-constexpr str_const AppName = "Telegram Desktop";
+constexpr str_const AppName = "Telegram Desktop MediaTube";
 
 constexpr str_const AppId = "{53F49750-6209-4FBF-9CA8-7A333C87D1ED}"; // used in updater.cpp and Setup.iss for Windows
 constexpr str_const AppFile = "Telegram";
@@ -21,11 +21,6 @@ enum {
 
 	MaxPhoneCodeLength = 4, // max length of country phone code
 	MaxPhoneTailLength = 32, // rest of the phone number, without country code (seen 12 at least), need more for service numbers
-
-	MaxScrollSpeed = 37, // 37px per 15ms while select-by-drag
-	FingerAccuracyThreshold = 3, // touch flick ignore 3px
-	MaxScrollAccelerated = 4000, // 4000px per second
-	MaxScrollFlick = 2500, // 2500px per second
 
 	LocalEncryptIterCount = 4000, // key derivation iteration count
 	LocalEncryptNoPwdIterCount = 4, // key derivation iteration count without pwd (not secure anyway)
@@ -69,18 +64,6 @@ enum {
 
 	ChoosePeerByDragTimeout = 1000, // 1 second mouse not moved to choose dialog when dragging a file
 };
-
-#ifdef Q_OS_WIN
-inline const GUID &cGUID() {
-#ifndef OS_MAC_STORE
-	static const GUID gGuid = { 0x87a94ab0, 0xe370, 0x4cde, { 0x98, 0xd3, 0xac, 0xc1, 0x10, 0xc5, 0x96, 0x7d } };
-#else // OS_MAC_STORE
-	static const GUID gGuid = { 0xe51fb841, 0x8c0b, 0x4ef9, { 0x9e, 0x9e, 0x5a, 0x0, 0x78, 0x56, 0x76, 0x27 } };
-#endif // OS_MAC_STORE
-
-	return gGuid;
-}
-#endif
 
 inline const char *cGUIDStr() {
 #ifndef OS_MAC_STORE
@@ -200,7 +183,7 @@ constexpr auto ApiHash = "344583e45741c457fe1862106095a5eb";
 #if (TDESKTOP_ALPHA_VERSION != 0)
 
 // Private key for downloading closed alphas.
-#include "../../../TelegramPrivate/alpha_private.h"
+#include "../../../DesktopPrivate/alpha_private.h"
 
 #else
 static const char *AlphaPrivateKey = "";

@@ -126,10 +126,13 @@ private:
 	bool _allLoaded = false;
 	ParticipantsAdditionalData _additional;
 	std::unique_ptr<ParticipantsOnlineSorter> _onlineSorter;
-	BoxPointer _editBox;
-	QPointer<BoxContent> _editParticipantBox;
+	Ui::BoxPointer _editBox;
+	QPointer<Ui::BoxContent> _editParticipantBox;
 	AdminDoneCallback _adminDoneCallback;
 	BannedDoneCallback _bannedDoneCallback;
+
+protected:
+	bool _excludeSelf = true;
 
 };
 

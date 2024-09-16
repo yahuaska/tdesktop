@@ -35,7 +35,7 @@ void OpenWith(const QString &filepath, QPoint menuPosition);
 void Launch(const QString &filepath);
 void ShowInFolder(const QString &filepath);
 
-QString DefaultDownloadPath();
+[[nodiscard]] QString DefaultDownloadPath();
 
 namespace internal {
 

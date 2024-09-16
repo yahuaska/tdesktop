@@ -23,6 +23,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "main/main_session.h"
 #include "window/window_session_controller.h"
 #include "layout.h"
+#include "facades.h"
+#include "app.h"
 #include "styles/style_widgets.h"
 #include "styles/style_history.h"
 #include "styles/style_dialogs.h"
@@ -846,7 +848,7 @@ TextState Message::textState(
 		result.symbol += item->_text.length();
 	}
 
-	if (keyboard && !item->isLogEntry()) {
+	if (keyboard && item->isHistoryEntry()) {
 		auto keyboardTop = g.top() + g.height() + st::msgBotKbButton.margin;
 		if (QRect(g.left(), keyboardTop, g.width(), keyboardHeight).contains(point)) {
 			result.link = keyboard->getLink(point - QPoint(g.left(), keyboardTop));
@@ -1445,7 +1447,7 @@ void Message::drawRightAction(
 	p.setBrush(st::msgServiceBg);
 	{
 		PainterHighQualityEnabler hq(p);
-		p.drawEllipse(rtlrect(
+		p.drawEllipse(style::rtlrect(
 			left,
 			top,
 			st::historyFastShareSize,
@@ -1829,21 +1831,9 @@ bool Message::displayEditedBadge() const {
 
 TimeId Message::displayedEditDate() const {
 	const auto item = message();
-	auto hasViaBotId = item->Has<HistoryMessageVia>();
-	auto hasInlineMarkup = (item->inlineReplyMarkup() != nullptr);
-	return displayedEditDate(hasViaBotId || hasInlineMarkup);
-}
-
-TimeId Message::displayedEditDate(
-		bool hasViaBotOrInlineMarkup) const {
-	if (hasViaBotOrInlineMarkup) {
+	if (item->hideEditedBadge()) {
 		return TimeId(0);
-	} else if (const auto fromUser = message()->from()->asUser()) {
-		if (fromUser->isBot()) {
-			return TimeId(0);
-		}
-	}
-	if (const auto edited = displayedEditBadge()) {
+	} else if (const auto edited = displayedEditBadge()) {
 		return edited->date;
 	}
 	return TimeId(0);

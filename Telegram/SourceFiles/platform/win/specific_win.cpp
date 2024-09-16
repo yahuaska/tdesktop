@@ -18,6 +18,11 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "storage/localstorage.h"
 #include "core/crash_reports.h"
 
+#include <QtWidgets/QApplication>
+#include <QtWidgets/QDesktopWidget>
+#include <QtGui/QDesktopServices>
+#include <qpa/qplatformnativeinterface.h>
+
 #include <Shobjidl.h>
 #include <shellapi.h>
 
@@ -47,8 +52,6 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include <functiondiscoverykeys.h>
 #include <intsafe.h>
 #include <guiddef.h>
-
-#include <qpa/qplatformnativeinterface.h>
 
 #ifndef DCX_USESTYLE
 #define DCX_USESTYLE 0x00010000
@@ -198,12 +201,6 @@ QRect psDesktopRect() {
 	return _monitorRect;
 }
 
-void psShowOverAll(QWidget *w, bool canFocus) {
-}
-
-void psBringToBack(QWidget *w) {
-}
-
 int psCleanup() {
 	__try
 	{
@@ -303,10 +300,6 @@ void start() {
 }
 
 void finish() {
-}
-
-bool IsApplicationActive() {
-	return QApplication::activeWindow() != nullptr;
 }
 
 void SetApplicationIcon(const QIcon &icon) {
@@ -569,19 +562,8 @@ void psSendToMenu(bool send, bool silent) {
 	_manageAppLnk(send, silent, CSIDL_SENDTO, L"-sendpath", L"Telegram send to link.\nYou can disable send to menu item in Telegram settings.");
 }
 
-void psUpdateOverlayed(TWidget *widget) {
-	bool wm = widget->testAttribute(Qt::WA_Mapped), wv = widget->testAttribute(Qt::WA_WState_Visible);
-	if (!wm) widget->setAttribute(Qt::WA_Mapped, true);
-	if (!wv) widget->setAttribute(Qt::WA_WState_Visible, true);
-	widget->update();
-	QEvent e(QEvent::UpdateRequest);
-	QGuiApplication::sendEvent(widget, &e);
-	if (!wm) widget->setAttribute(Qt::WA_Mapped, false);
-	if (!wv) widget->setAttribute(Qt::WA_WState_Visible, false);
-}
-
 void psWriteDump() {
-#ifndef TDESKTOP_DISABLE_CRASH_REPORTS
+#ifndef DESKTOP_APP_DISABLE_CRASH_REPORTS
 	PROCESS_MEMORY_COUNTERS data = { 0 };
 	if (Dlls::GetProcessMemoryInfo
 		&& Dlls::GetProcessMemoryInfo(
@@ -602,7 +584,7 @@ void psWriteDump() {
 			<< (data.PagefileUsage / mb)
 			<< " MB (current)\n";
 	}
-#endif // TDESKTOP_DISABLE_CRASH_REPORTS
+#endif // DESKTOP_APP_DISABLE_CRASH_REPORTS
 }
 
 bool psLaunchMaps(const Data::LocationPoint &point) {

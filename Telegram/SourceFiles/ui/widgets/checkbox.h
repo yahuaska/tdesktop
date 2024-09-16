@@ -9,7 +9,10 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 #include "ui/widgets/buttons.h"
 #include "ui/effects/animations.h"
+#include "ui/text/text.h"
 #include "styles/style_widgets.h"
+
+class Painter;
 
 namespace Ui {
 
@@ -152,7 +155,8 @@ public:
 
 	void setText(const QString &text, bool rich = false);
 	void setCheckAlignment(style::align alignment);
-	void setAllowMultiline(bool allow);
+	void setAllowTextLines(int lines = 0);
+	void setTextBreakEverywhere(bool allow = true);
 
 	bool checked() const;
 	rpl::producer<bool> checkedChanges() const;
@@ -200,7 +204,8 @@ private:
 
 	Text::String _text;
 	style::align _checkAlignment = style::al_left;
-	bool _allowMultiline = false;
+	int _allowTextLines = 1;
+	bool _textBreakEverywhere = false;
 
 };
 

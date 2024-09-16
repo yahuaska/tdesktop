@@ -7,6 +7,11 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "ui/rp_widget.h"
 
+#include "base/qt_signal_producer.h"
+
+#include <QtGui/QWindow>
+#include <QtGui/QtEvents>
+
 namespace Ui {
 
 void ResizeFitChild(
@@ -79,6 +84,26 @@ rpl::producer<QRect> RpWidgetMethods::paintRequest() const {
 
 rpl::producer<> RpWidgetMethods::alive() const {
 	return eventStreams().alive.events();
+}
+
+rpl::producer<> RpWidgetMethods::windowDeactivateEvents() const {
+	const auto window = callGetWidget()->window()->windowHandle();
+	Assert(window != nullptr);
+
+	return base::qt_signal_producer(
+		window,
+		&QWindow::activeChanged
+	) | rpl::filter([=] {
+		return !window->isActive();
+	});
+}
+
+rpl::producer<> RpWidgetMethods::macWindowDeactivateEvents() const {
+#ifdef Q_OS_MAC
+	return windowDeactivateEvents();
+#else // Q_OS_MAC
+	return rpl::never<rpl::empty_value>();
+#endif // Q_OS_MAC
 }
 
 rpl::lifetime &RpWidgetMethods::lifetime() {

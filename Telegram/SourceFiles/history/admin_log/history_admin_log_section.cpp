@@ -16,6 +16,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/widgets/shadow.h"
 #include "ui/widgets/buttons.h"
 #include "ui/widgets/input_fields.h"
+#include "ui/ui_utility.h"
 #include "mainwidget.h"
 #include "mainwindow.h"
 #include "apiwrap.h"
@@ -26,6 +27,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "data/data_channel.h"
 #include "data/data_session.h"
 #include "lang/lang_keys.h"
+#include "facades.h"
 #include "styles/style_history.h"
 #include "styles/style_window.h"
 #include "styles/style_info.h"
@@ -250,7 +252,11 @@ void FixedBar::mousePressEvent(QMouseEvent *e) {
 	}
 }
 
-Widget::Widget(QWidget *parent, not_null<Window::SessionController*> controller, not_null<ChannelData*> channel) : Window::SectionWidget(parent, controller)
+Widget::Widget(
+	QWidget *parent,
+	not_null<Window::SessionController*> controller,
+	not_null<ChannelData*> channel)
+: Window::SectionWidget(parent, controller)
 , _scroll(this, st::historyScroll, false)
 , _fixedBar(this, controller, channel)
 , _fixedBarShadow(this)
@@ -267,9 +273,19 @@ Widget::Widget(QWidget *parent, not_null<Window::SessionController*> controller,
 	subscribe(Adaptive::Changed(), [this] { updateAdaptiveLayout(); });
 
 	_inner = _scroll->setOwnedWidget(object_ptr<InnerWidget>(this, controller, channel));
-	subscribe(_inner->showSearchSignal, [this] { _fixedBar->showSearch(); });
-	subscribe(_inner->cancelledSignal, [this] { _fixedBar->goBack(); });
-	subscribe(_inner->scrollToSignal, [this](int top) { _scroll->scrollToY(top); });
+	_inner->showSearchSignal(
+	) | rpl::start_with_next([=] {
+		_fixedBar->showSearch();
+	}, lifetime());
+	_inner->cancelSignal(
+	) | rpl::start_with_next([=] {
+		_fixedBar->goBack();
+	}, lifetime());
+	_inner->scrollToSignal(
+	) | rpl::start_with_next([=](int top) {
+		_scroll->scrollToY(top);
+	}, lifetime());
+
 	_scroll->move(0, _fixedBar->height());
 	_scroll->show();
 

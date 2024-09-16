@@ -23,6 +23,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "data/data_media_types.h"
 #include "lang/lang_keys.h"
 #include "layout.h"
+#include "facades.h"
+#include "app.h"
 #include "styles/style_history.h"
 
 namespace HistoryView {
@@ -608,7 +610,7 @@ const HistoryBlock *Element::block() const {
 }
 
 void Element::attachToBlock(not_null<HistoryBlock*> block, int index) {
-	Expects(!_data->isLogEntry());
+	Expects(_data->isHistoryEntry());
 	Expects(_block == nullptr);
 	Expects(_indexInBlock < 0);
 	Expects(index >= 0);

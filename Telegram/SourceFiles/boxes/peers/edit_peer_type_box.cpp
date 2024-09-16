@@ -24,8 +24,6 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "mainwindow.h"
 #include "mtproto/sender.h"
 #include "observer_peer.h"
-#include "styles/style_boxes.h"
-#include "styles/style_info.h"
 #include "ui/rp_widget.h"
 #include "ui/special_buttons.h"
 #include "ui/toast/toast.h"
@@ -33,10 +31,19 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/widgets/checkbox.h"
 #include "ui/widgets/input_fields.h"
 #include "ui/widgets/labels.h"
+#include "ui/widgets/box_content_divider.h"
 #include "ui/wrap/padding_wrap.h"
 #include "ui/wrap/slide_wrap.h"
 #include "ui/wrap/vertical_layout.h"
+#include "ui/special_fields.h"
 #include "window/window_session_controller.h"
+#include "styles/style_layers.h"
+#include "styles/style_boxes.h"
+#include "styles/style_info.h"
+
+#include <QtGui/QGuiApplication>
+#include <QtGui/QClipboard>
+
 #include <rpl/flatten_latest.h>
 
 namespace {
@@ -185,7 +192,7 @@ void Controller::createContent() {
 
 	fillPrivaciesButtons(_wrap, _privacySavedValue);
 	// Skip.
-	_wrap->add(object_ptr<BoxContentDivider>(_wrap));
+	_wrap->add(object_ptr<Ui::BoxContentDivider>(_wrap));
 	//
 	_wrap->add(createInviteLinkCreate());
 	_wrap->add(createInviteLinkEdit());
@@ -467,7 +474,7 @@ void Controller::askUsernameRevoke() {
 		Box<RevokePublicLinkBox>(
 			&_peer->session(),
 			std::move(revokeCallback)),
-		LayerOption::KeepOther);
+		Ui::LayerOption::KeepOther);
 }
 
 void Controller::usernameChanged() {
@@ -549,7 +556,7 @@ void Controller::exportInviteLink(const QString &confirmation) {
 	auto box = Box<ConfirmBox>(
 		confirmation,
 		std::move(callback));
-	*boxPointer = Ui::show(std::move(box), LayerOption::KeepOther);
+	*boxPointer = Ui::show(std::move(box), Ui::LayerOption::KeepOther);
 }
 
 bool Controller::canEditInviteLink() const {
@@ -607,7 +614,7 @@ object_ptr<Ui::RpWidget> Controller::createInviteLinkEdit() {
 	_controls.inviteLink->setContextCopyText(QString());
 	_controls.inviteLink->setBreakEverywhere(true);
 	_controls.inviteLink->setClickHandlerFilter([=](auto&&...) {
-		QApplication::clipboard()->setText(inviteLinkText());
+		QGuiApplication::clipboard()->setText(inviteLinkText());
 		Ui::Toast::Show(tr::lng_group_invite_copied(tr::now));
 		return false;
 	});

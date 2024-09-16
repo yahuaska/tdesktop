@@ -31,8 +31,11 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "main/main_session.h"
 #include "observer_peer.h"
 #include "apiwrap.h"
+#include "app.h"
 #include "styles/style_chat_helpers.h"
 #include "styles/style_window.h"
+
+#include <QtWidgets/QApplication>
 
 namespace ChatHelpers {
 namespace {
@@ -462,13 +465,13 @@ void StickersListWidget::Footer::paintLeftRightFading(Painter &p) const {
 	auto o_left = snap(_iconsX.current() / st::stickerIconLeft.width(), 0., 1.);
 	if (o_left > 0) {
 		p.setOpacity(o_left);
-		st::stickerIconLeft.fill(p, rtlrect(_iconsLeft, _iconsTop, st::stickerIconLeft.width(), st::emojiFooterHeight, width()));
+		st::stickerIconLeft.fill(p, style::rtlrect(_iconsLeft, _iconsTop, st::stickerIconLeft.width(), st::emojiFooterHeight, width()));
 		p.setOpacity(1.);
 	}
 	auto o_right = snap((_iconsMax - _iconsX.current()) / st::stickerIconRight.width(), 0., 1.);
 	if (o_right > 0) {
 		p.setOpacity(o_right);
-		st::stickerIconRight.fill(p, rtlrect(width() - _iconsRight - st::stickerIconRight.width(), _iconsTop, st::stickerIconRight.width(), st::emojiFooterHeight, width()));
+		st::stickerIconRight.fill(p, style::rtlrect(width() - _iconsRight - st::stickerIconRight.width(), _iconsTop, st::stickerIconRight.width(), st::emojiFooterHeight, width()));
 		p.setOpacity(1.);
 	}
 }
@@ -1393,7 +1396,7 @@ void StickersListWidget::paintStickers(Painter &p, QRect clip) {
 
 				{
 					PainterHighQualityEnabler hq(p);
-					p.drawEllipse(rtlrect(st::emojiPanHeaderLeft - st::buttonRadius + titleWidth + st::stickersFeaturedUnreadSkip, info.top + st::stickersTrendingHeaderTop + st::stickersFeaturedUnreadTop, st::stickersFeaturedUnreadSize, st::stickersFeaturedUnreadSize, width()));
+					p.drawEllipse(style::rtlrect(st::emojiPanHeaderLeft - st::buttonRadius + titleWidth + st::stickersFeaturedUnreadSkip, info.top + st::stickersTrendingHeaderTop + st::stickersFeaturedUnreadTop, st::stickersFeaturedUnreadSize, st::stickersFeaturedUnreadSize, width()));
 				}
 			}
 
@@ -1574,6 +1577,8 @@ int StickersListWidget::megagroupSetInfoLeft() const {
 }
 
 void StickersListWidget::paintMegagroupEmptySet(Painter &p, int y, bool buttonSelected) {
+	p.setPen(st::emojiPanHeaderFg);
+
 	auto infoLeft = megagroupSetInfoLeft();
 	_megagroupSetAbout.drawLeft(p, infoLeft, y, width() - infoLeft, width());
 
@@ -1672,7 +1677,7 @@ void StickersListWidget::paintSticker(Painter &p, Set &set, int y, int section, 
 	auto h = 1;
 	if (sticker.animated && !document->dimensions.isEmpty()) {
 		const auto request = Lottie::FrameRequest{ boundingBoxSize() * cIntRetinaFactor() };
-		const auto size = request.size(document->dimensions) / cIntRetinaFactor();
+		const auto size = request.size(document->dimensions, true) / cIntRetinaFactor();
 		w = std::max(size.width(), 1);
 		h = std::max(size.height(), 1);
 	} else {
@@ -1890,7 +1895,18 @@ void StickersListWidget::mouseReleaseEvent(QMouseEvent *e) {
 				}
 				return;
 			}
-			_chosen.fire_copy(set.stickers[sticker->index].document);
+			const auto document = set.stickers[sticker->index].document;
+			if (e->modifiers() & Qt::ControlModifier) {
+				if (document->sticker()
+					&& document->sticker()->set.type() != mtpc_inputStickerSetEmpty) {
+					_displayingSet = true;
+					checkHideWithBox(StickerSetBox::Show(
+						controller(),
+						document));
+				}
+			} else {
+				_chosen.fire_copy(document);
+			}
 		} else if (auto set = base::get_if<OverSet>(&pressed)) {
 			Assert(set->section >= 0 && set->section < sets.size());
 			displaySet(sets[set->section].id);
@@ -2525,7 +2541,7 @@ void StickersListWidget::fillIcons(QList<StickerIcon> &icons) {
 }
 
 bool StickersListWidget::preventAutoHide() {
-	return _removingSetId != 0 || _displayingSetId != 0;
+	return _removingSetId != 0 || _displayingSet != 0;
 }
 
 void StickersListWidget::updateSelected() {
@@ -2756,12 +2772,10 @@ void StickersListWidget::beforeHiding() {
 void StickersListWidget::displaySet(uint64 setId) {
 	if (setId == Stickers::MegagroupSetId) {
 		if (_megagroupSet->canEditStickers()) {
-			_displayingSetId = setId;
-			auto box = Ui::show(Box<StickersBox>(_megagroupSet));
-			connect(box, &QObject::destroyed, this, [this] {
-				_displayingSetId = 0;
-				_checkForHide.fire({});
-			});
+			_displayingSet = true;
+			checkHideWithBox(Ui::show(
+				Box<StickersBox>(_megagroupSet),
+				Ui::LayerOption::KeepOther).data());
 			return;
 		} else if (_megagroupSet->mgInfo->stickerSet.type() == mtpc_inputStickerSetID) {
 			setId = _megagroupSet->mgInfo->stickerSet.c_inputStickerSetID().vid().v;
@@ -2772,15 +2786,21 @@ void StickersListWidget::displaySet(uint64 setId) {
 	auto &sets = session().data().stickerSets();
 	auto it = sets.constFind(setId);
 	if (it != sets.cend()) {
-		_displayingSetId = setId;
-		auto box = Ui::show(
+		_displayingSet = true;
+		checkHideWithBox(Ui::show(
 			Box<StickerSetBox>(controller(), Stickers::inputSetId(*it)),
-			LayerOption::KeepOther);
-		connect(box, &QObject::destroyed, this, [this] {
-			_displayingSetId = 0;
-			_checkForHide.fire({});
-		});
+			Ui::LayerOption::KeepOther).data());
 	}
+}
+
+void StickersListWidget::checkHideWithBox(QPointer<Ui::BoxContent> box) {
+	if (!box) {
+		return;
+	}
+	connect(box, &QObject::destroyed, this, [=] {
+		_displayingSet = false;
+		_checkForHide.fire({});
+	});
 }
 
 void StickersListWidget::installSet(uint64 setId) {

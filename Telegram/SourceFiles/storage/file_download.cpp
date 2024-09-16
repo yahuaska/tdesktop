@@ -21,6 +21,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "core/crash_reports.h"
 #include "base/bytes.h"
 #include "base/openssl_help.h"
+#include "facades.h"
+#include "app.h"
 
 namespace Storage {
 namespace {
@@ -29,7 +31,7 @@ namespace {
 constexpr auto kKillSessionTimeout = crl::time(5000);
 
 // Max 16 file parts downloaded at the same time, 128 KB each.
-constexpr auto kMaxFileQueries = 16;
+constexpr auto kMaxFileQueries = 64;
 
 // Max 8 http[s] files downloaded at the same time.
 constexpr auto kMaxWebFileQueries = 8;
@@ -447,7 +449,7 @@ bool FileLoader::tryLoadLocal() {
 		return true;
 	}
 
-	const auto weak = make_weak(this);
+	const auto weak = QPointer<FileLoader>(this);
 	if (_toCache == LoadToCacheAsWell) {
 		loadLocal(cacheKey());
 		emit progress(this);
@@ -483,7 +485,7 @@ void FileLoader::cancel(bool fail) {
 
 	const auto queue = _queue;
 	const auto sessionGuard = &session();
-	const auto weak = make_weak(this);
+	const auto weak = QPointer<FileLoader>(this);
 	if (fail) {
 		emit failed(this, started);
 	} else {
@@ -987,7 +989,7 @@ void mtpFileLoader::getCdnFileHashesDone(
 		}
 	}
 	if (someMoreChecked) {
-		const auto weak = make_weak(this);
+		const auto weak = QPointer<mtpFileLoader>(this);
 		notifyAboutProgress();
 		if (weak) {
 			requestMoreCdnFileHashes();

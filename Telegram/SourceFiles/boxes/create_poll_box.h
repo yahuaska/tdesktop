@@ -8,6 +8,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #pragma once
 
 #include "boxes/abstract_box.h"
+#include "api/api_common.h"
+#include "data/data_poll.h"
 
 struct PollData;
 
@@ -19,11 +21,19 @@ namespace Main {
 class Session;
 } // namespace Main
 
-class CreatePollBox : public BoxContent {
+class CreatePollBox : public Ui::BoxContent {
 public:
-	CreatePollBox(QWidget*, not_null<Main::Session*> session);
+	struct Result {
+		PollData poll;
+		Api::SendOptions options;
+	};
 
-	rpl::producer<PollData> submitRequests() const;
+	CreatePollBox(
+		QWidget*,
+		not_null<Main::Session*> session,
+		Api::SendType sendType);
+
+	rpl::producer<Result> submitRequests() const;
 	void submitFailed(const QString &error);
 
 	void setInnerFocus() override;
@@ -37,8 +47,9 @@ private:
 		not_null<Ui::VerticalLayout*> container);
 
 	const not_null<Main::Session*> _session;
+	const Api::SendType _sendType = Api::SendType();
 	Fn<void()> _setInnerFocus;
 	Fn<rpl::producer<bool>()> _dataIsValidValue;
-	rpl::event_stream<PollData> _submitRequests;
+	rpl::event_stream<Result> _submitRequests;
 
 };

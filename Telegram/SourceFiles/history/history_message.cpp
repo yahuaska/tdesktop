@@ -11,6 +11,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "mainwidget.h"
 #include "mainwindow.h"
 #include "apiwrap.h"
+#include "api/api_text_entities.h"
 #include "history/history.h"
 #include "history/history_item_components.h"
 #include "history/history_location_manager.h"
@@ -36,10 +37,15 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "data/data_media_types.h"
 #include "data/data_channel.h"
 #include "data/data_user.h"
+#include "facades.h"
+#include "app.h"
 #include "styles/style_dialogs.h"
 #include "styles/style_widgets.h"
 #include "styles/style_history.h"
 #include "styles/style_window.h"
+
+#include <QtGui/QGuiApplication>
+#include <QtGui/QClipboard>
 
 namespace {
 
@@ -114,7 +120,7 @@ bool HasInlineItems(const HistoryItemsList &items) {
 
 } // namespace
 
-QString GetErrorTextForForward(
+QString GetErrorTextForSending(
 		not_null<PeerData*> peer,
 		const HistoryItemsList &items,
 		const TextWithTags &comment,
@@ -212,7 +218,7 @@ void FastShareMessage(not_null<HistoryItem*> item) {
 							+ qsl("?game=")
 							+ game->shortName);
 
-						QApplication::clipboard()->setText(link);
+						QGuiApplication::clipboard()->setText(link);
 
 						Ui::Toast::Show(tr::lng_share_game_link_copied(tr::now));
 					}
@@ -221,9 +227,9 @@ void FastShareMessage(not_null<HistoryItem*> item) {
 		}
 	};
 	auto submitCallback = [=](
-			QVector<PeerData*> &&result,
+			std::vector<not_null<PeerData*>> &&result,
 			TextWithTags &&comment,
-			bool silent) {
+			Api::SendOptions options) {
 		if (!data->requests.empty()) {
 			return; // Share clicked already.
 		}
@@ -234,7 +240,7 @@ void FastShareMessage(not_null<HistoryItem*> item) {
 
 		const auto error = [&] {
 			for (const auto peer : result) {
-				const auto error = GetErrorTextForForward(
+				const auto error = GetErrorTextForSending(
 					peer,
 					items,
 					comment);
@@ -248,13 +254,13 @@ void FastShareMessage(not_null<HistoryItem*> item) {
 			auto text = TextWithEntities();
 			if (result.size() > 1) {
 				text.append(
-					Ui::Text::Bold(App::peerName(error.second))
+					Ui::Text::Bold(error.second->name)
 				).append("\n\n");
 			}
 			text.append(error.first);
 			Ui::show(
 				Box<InformBox>(text),
-				LayerOption::KeepOther);
+				Ui::LayerOption::KeepOther);
 			return;
 		}
 
@@ -272,8 +278,11 @@ void FastShareMessage(not_null<HistoryItem*> item) {
 			| (isGroup
 				? MTPmessages_ForwardMessages::Flag::f_grouped
 				: MTPmessages_ForwardMessages::Flag(0))
-			| (silent
+			| (options.silent
 				? MTPmessages_ForwardMessages::Flag::f_silent
+				: MTPmessages_ForwardMessages::Flag(0))
+			| (options.scheduled
+				? MTPmessages_ForwardMessages::Flag::f_schedule_date
 				: MTPmessages_ForwardMessages::Flag(0));
 		auto msgIds = QVector<MTPint>();
 		msgIds.reserve(data->msgIds.size());
@@ -292,17 +301,18 @@ void FastShareMessage(not_null<HistoryItem*> item) {
 			if (!comment.text.isEmpty()) {
 				auto message = ApiWrap::MessageToSend(history);
 				message.textWithTags = comment;
-				message.clearDraft = false;
+				message.action.options = options;
+				message.action.clearDraft = false;
 				history->session().api().sendMessage(std::move(message));
 			}
-			auto request = MTPmessages_ForwardMessages(
-				MTP_flags(sendFlags),
-				data->peer->input,
-				MTP_vector<MTPint>(msgIds),
-				MTP_vector<MTPlong>(generateRandom()),
-				peer->input);
 			history->sendRequestId = MTP::send(
-				request,
+				MTPmessages_ForwardMessages(
+					MTP_flags(sendFlags),
+					data->peer->input,
+					MTP_vector<MTPint>(msgIds),
+					MTP_vector<MTPlong>(generateRandom()),
+					peer->input,
+					MTP_int(options.scheduled)),
 				rpcDone(base::duplicate(doneCallback)),
 				nullptr,
 				0,
@@ -354,11 +364,11 @@ MTPDmessage_ClientFlags NewMessageClientFlags() {
 	return MTPDmessage_ClientFlag::f_sending;
 }
 
-QString GetErrorTextForForward(
+QString GetErrorTextForSending(
 		not_null<PeerData*> peer,
 		const HistoryItemsList &items,
 		bool ignoreSlowmodeCountdown) {
-	return GetErrorTextForForward(peer, items, {}, ignoreSlowmodeCountdown);
+	return GetErrorTextForSending(peer, items, {}, ignoreSlowmodeCountdown);
 }
 
 struct HistoryMessage::CreateConfig {
@@ -433,7 +443,7 @@ HistoryMessage::HistoryMessage(
 	}
 	setText({
 		TextUtilities::Clean(qs(data.vmessage())),
-		TextUtilities::EntitiesFromMTP(data.ventities().value_or_empty())
+		Api::EntitiesFromMTP(data.ventities().value_or_empty())
 	});
 	if (const auto groupedId = data.vgrouped_id()) {
 		setGroupId(
@@ -736,10 +746,14 @@ void HistoryMessage::applyGroupAdminChanges(
 }
 
 bool HistoryMessage::allowsForward() const {
-	if (id < 0 || isLogEntry()) {
+	if (id < 0 || !isHistoryEntry()) {
 		return false;
 	}
 	return !_media || _media->allowsForward();
+}
+
+bool HistoryMessage::allowsSendNow() const {
+	return isScheduled() && !isSending() && !hasFailed();
 }
 
 bool HistoryMessage::isTooOldForEdit(TimeId now) const {
@@ -1027,6 +1041,9 @@ void HistoryMessage::applyEdition(const MTPDmessage &message) {
 	//	}
 	//}
 
+	const auto copyFlags = MTPDmessage::Flag::f_edit_hide;
+	_flags = (_flags & ~copyFlags) | (message.vflags().v & copyFlags);
+
 	if (const auto editDate = message.vedit_date()) {
 		_flags |= MTPDmessage::Flag::f_edit_date;
 		if (!Has<HistoryMessageEdited>()) {
@@ -1038,7 +1055,7 @@ void HistoryMessage::applyEdition(const MTPDmessage &message) {
 
 	const auto textWithEntities = TextWithEntities{
 		qs(message.vmessage()),
-		TextUtilities::EntitiesFromMTP(message.ventities().value_or_empty())
+		Api::EntitiesFromMTP(message.ventities().value_or_empty())
 	};
 	setReplyMarkup(message.vreply_markup());
 	if (!isLocalUpdateMedia()) {
@@ -1298,7 +1315,12 @@ void HistoryMessage::dependencyItemRemoved(HistoryItem *dependency) {
 }
 
 QString HistoryMessage::notificationHeader() const {
-	return (!_history->peer->isUser() && !isPost()) ? from()->name : QString();
+	if (out() && isFromScheduled() && !_history->peer->isSelf()) {
+		return tr::lng_from_you(tr::now);
+	} else if (!_history->peer->isUser() && !isPost()) {
+		return from()->name;
+	}
+	return QString();
 }
 
 std::unique_ptr<HistoryView::Element> HistoryMessage::createView(

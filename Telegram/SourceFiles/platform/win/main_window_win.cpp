@@ -13,13 +13,20 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "platform/win/windows_event_filter.h"
 #include "window/notifications_manager.h"
 #include "mainwindow.h"
+#include "base/crc32hash.h"
 #include "core/application.h"
 #include "lang/lang_keys.h"
 #include "storage/localstorage.h"
 #include "ui/widgets/popup_menu.h"
 #include "window/themes/window_theme.h"
 #include "history/history.h"
+#include "facades.h"
+#include "app.h"
 
+#include <QtWidgets/QDesktopWidget>
+#include <QtWidgets/QStyleFactory>
+#include <QtWidgets/QApplication>
+#include <QtGui/QWindow>
 #include <qpa/qplatformnativeinterface.h>
 
 #include <Shobjidl.h>
@@ -185,7 +192,7 @@ public:
 		max_w = avail.width();
 		accumulate_max(max_w, st::windowMinWidth);
 		max_h = avail.height();
-		accumulate_max(max_h, st::titleHeight + st::windowMinHeight);
+		accumulate_max(max_h, st::defaultWindowTitle.height + st::windowMinHeight);
 
 		HINSTANCE appinst = (HINSTANCE)GetModuleHandle(0);
 		HWND hwnd = _window ? _window->psHwnd() : nullptr;
@@ -655,7 +662,7 @@ int32 MainWindow::screenNameChecksum(const QString &name) const {
 	} else {
 		memcpy(buffer, name.toStdWString().data(), sizeof(buffer));
 	}
-	return hashCrc32(buffer, sizeof(buffer));
+	return base::crc32(buffer, sizeof(buffer));
 }
 
 void MainWindow::psRefreshTaskbarIcon() {

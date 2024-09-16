@@ -7,12 +7,11 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "base/unixtime.h"
 
-#include "logs.h"
-
 #include <QDateTime>
 #include <QReadWriteLock>
 
 #ifdef Q_OS_WIN
+#include <windows.h>
 #elif defined Q_OS_MAC
 #include <mach/mach_time.h>
 #else
@@ -124,19 +123,15 @@ TimeId now() {
 
 void update(TimeId now, bool force) {
 	if (force) {
-		DEBUG_LOG(("MTP Info: forcing client unixtime to %1"
-			).arg(now));
 		ValueUpdated = true;
 	} else {
 		auto expected = false;
 		if (!ValueUpdated.compare_exchange_strong(expected, true)) {
 			return;
 		}
-		DEBUG_LOG(("MTP Info: setting client unixtime to %1").arg(now));
 	}
 	const auto shift = now + 1 - local();
 	ValueShift = shift;
-	DEBUG_LOG(("MTP Info: now unixtimeDelta is %1").arg(shift));
 
 	HttpValueShift = 0;
 	HttpValueValid = false;

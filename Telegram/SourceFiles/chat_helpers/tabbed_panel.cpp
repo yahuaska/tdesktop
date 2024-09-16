@@ -9,11 +9,12 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 #include "ui/widgets/shadow.h"
 #include "ui/image/image_prepare.h"
+#include "ui/ui_utility.h"
 #include "chat_helpers/tabbed_selector.h"
 #include "window/window_session_controller.h"
 #include "mainwindow.h"
 #include "core/application.h"
-#include "core/qt_signal_producer.h"
+#include "app.h"
 #include "styles/style_chat_helpers.h"
 
 namespace ChatHelpers {
@@ -26,20 +27,27 @@ constexpr auto kDelayedHideTimeoutMs = 3000;
 
 TabbedPanel::TabbedPanel(
 	QWidget *parent,
-	not_null<Window::SessionController*> controller)
-: TabbedPanel(
-	parent,
-	controller,
-	object_ptr<TabbedSelector>(nullptr, controller)) {
+	not_null<Window::SessionController*> controller,
+	not_null<TabbedSelector*> selector)
+: TabbedPanel(parent, controller, { nullptr }, selector) {
 }
 
 TabbedPanel::TabbedPanel(
 	QWidget *parent,
 	not_null<Window::SessionController*> controller,
 	object_ptr<TabbedSelector> selector)
+: TabbedPanel(parent, controller, std::move(selector), nullptr) {
+}
+
+TabbedPanel::TabbedPanel(
+	QWidget *parent,
+	not_null<Window::SessionController*> controller,
+	object_ptr<TabbedSelector> ownedSelector,
+	TabbedSelector *nonOwnedSelector)
 : RpWidget(parent)
 , _controller(controller)
-, _selector(std::move(selector))
+, _ownedSelector(std::move(ownedSelector))
+, _selector(nonOwnedSelector ? nonOwnedSelector : _ownedSelector.data())
 , _heightRatio(st::emojiPanHeightRatio)
 , _minContentHeight(st::emojiPanMinHeight)
 , _maxContentHeight(st::emojiPanMaxHeight) {
@@ -103,6 +111,15 @@ TabbedPanel::TabbedPanel(
 	setAttribute(Qt::WA_OpaquePaintEvent, false);
 
 	hideChildren();
+	hide();
+}
+
+not_null<TabbedSelector*> TabbedPanel::selector() const {
+	return _selector;
+}
+
+bool TabbedPanel::isSelectorStolen() const {
+	return (_selector->parent() != this);
 }
 
 void TabbedPanel::moveBottomRight(int bottom, int right) {
@@ -306,8 +323,7 @@ void TabbedPanel::startShowAnimation() {
 		_showAnimation = std::make_unique<Ui::PanelAnimation>(st::emojiPanAnimation, Ui::PanelAnimation::Origin::BottomRight);
 		auto inner = rect().marginsRemoved(st::emojiPanMargins);
 		_showAnimation->setFinalImage(std::move(image), QRect(inner.topLeft() * cIntRetinaFactor(), inner.size() * cIntRetinaFactor()));
-		auto corners = App::cornersMask(ImageRoundRadius::Small);
-		_showAnimation->setCornerMasks(corners[0], corners[1], corners[2], corners[3]);
+		_showAnimation->setCornerMasks(Images::CornersMask(ImageRoundRadius::Small));
 		_showAnimation->start();
 	}
 	hideChildren();
@@ -363,17 +379,6 @@ void TabbedPanel::toggleAnimated() {
 	} else {
 		hideAnimated();
 	}
-}
-
-object_ptr<TabbedSelector> TabbedPanel::takeSelector() {
-	if (!isHidden() && !_hiding) {
-		startOpacityAnimation(true);
-	}
-	return std::move(_selector);
-}
-
-QPointer<TabbedSelector> TabbedPanel::getSelector() const {
-	return _selector.data();
 }
 
 void TabbedPanel::hideFinished() {
@@ -449,6 +454,10 @@ bool TabbedPanel::overlaps(const QRect &globalRect) const {
 		|| inner.marginsRemoved(QMargins(0, st::buttonRadius, 0, st::buttonRadius)).contains(testRect);
 }
 
-TabbedPanel::~TabbedPanel() = default;
+TabbedPanel::~TabbedPanel() {
+	if (!_ownedSelector) {
+		_controller->takeTabbedSelectorOwnershipFrom(this);
+	}
+}
 
 } // namespace ChatHelpers

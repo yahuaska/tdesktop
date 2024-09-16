@@ -21,7 +21,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "history/view/history_view_cursor_state.h"
 #include "chat_helpers/message_field.h"
 #include "boxes/sticker_set_box.h"
-#include "platform/platform_info.h"
+#include "base/platform/base_platform_info.h"
 #include "mainwindow.h"
 #include "mainwidget.h"
 #include "core/application.h"
@@ -32,6 +32,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/widgets/popup_menu.h"
 #include "ui/image/image.h"
 #include "ui/text/text_utilities.h"
+#include "ui/inactive_press.h"
 #include "core/file_utilities.h"
 #include "lang/lang_keys.h"
 #include "boxes/peers/edit_participant_box.h"
@@ -40,8 +41,14 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "data/data_photo.h"
 #include "data/data_document.h"
 #include "data/data_media_types.h"
+#include "data/data_file_origin.h"
 #include "data/data_channel.h"
 #include "data/data_user.h"
+#include "facades.h"
+#include "app.h"
+
+#include <QtWidgets/QApplication>
+#include <QtGui/QClipboard>
 
 namespace AdminLog {
 namespace {
@@ -219,34 +226,33 @@ InnerWidget::InnerWidget(
 , _controller(controller)
 , _channel(channel)
 , _history(channel->owner().history(channel))
-, _scrollDateCheck([this] { scrollDateCheck(); })
+, _scrollDateCheck([=] { scrollDateCheck(); })
 , _emptyText(
-	st::historyAdminLogEmptyWidth
-	- st::historyAdminLogEmptyPadding.left()
-	- st::historyAdminLogEmptyPadding.left())
-, _idManager(_history->adminLogIdManager()) {
+		st::historyAdminLogEmptyWidth
+		- st::historyAdminLogEmptyPadding.left()
+		- st::historyAdminLogEmptyPadding.left()) {
 	setMouseTracking(true);
-	_scrollDateHideTimer.setCallback([this] { scrollDateHideByTimer(); });
+	_scrollDateHideTimer.setCallback([=] { scrollDateHideByTimer(); });
 	session().data().viewRepaintRequest(
-	) | rpl::start_with_next([this](auto view) {
+	) | rpl::start_with_next([=](auto view) {
 		if (view->delegate() == this) {
 			repaintItem(view);
 		}
 	}, lifetime());
 	session().data().viewResizeRequest(
-	) | rpl::start_with_next([this](auto view) {
+	) | rpl::start_with_next([=](auto view) {
 		if (view->delegate() == this) {
 			resizeItem(view);
 		}
 	}, lifetime());
 	session().data().itemViewRefreshRequest(
-	) | rpl::start_with_next([this](auto item) {
+	) | rpl::start_with_next([=](auto item) {
 		if (const auto view = viewForItem(item)) {
 			refreshItem(view);
 		}
 	}, lifetime());
 	session().data().viewLayoutChanged(
-	) | rpl::start_with_next([this](auto view) {
+	) | rpl::start_with_next([=](auto view) {
 		if (view->delegate() == this) {
 			if (view->isUnderCursor()) {
 				updateSelected();
@@ -254,15 +260,18 @@ InnerWidget::InnerWidget(
 		}
 	}, lifetime());
 	session().data().animationPlayInlineRequest(
-	) | rpl::start_with_next([this](auto item) {
+	) | rpl::start_with_next([=](auto item) {
 		if (const auto view = viewForItem(item)) {
 			if (const auto media = view->media()) {
 				media->playAnimation();
 			}
 		}
 	}, lifetime());
-	subscribe(session().data().queryItemVisibility(), [this](const Data::Session::ItemVisibilityQuery &query) {
-		if (_history != query.item->history() || !query.item->isLogEntry() || !isVisible()) {
+	subscribe(session().data().queryItemVisibility(), [=](
+			const Data::Session::ItemVisibilityQuery &query) {
+		if (_history != query.item->history()
+			|| !query.item->isAdminLogEntry()
+			|| !isVisible()) {
 			return;
 		}
 		if (const auto view = viewForItem(query.item)) {
@@ -279,6 +288,18 @@ InnerWidget::InnerWidget(
 
 Main::Session &InnerWidget::session() const {
 	return _controller->session();
+}
+
+rpl::producer<> InnerWidget::showSearchSignal() const {
+	return _showSearchSignal.events();
+}
+
+rpl::producer<int> InnerWidget::scrollToSignal() const {
+	return _scrollToSignal.events();
+}
+
+rpl::producer<> InnerWidget::cancelSignal() const {
+	return _cancelSignal.events();
 }
 
 void InnerWidget::visibleTopBottomUpdated(
@@ -496,6 +517,10 @@ QPoint InnerWidget::tooltipPos() const {
 	return _mousePosition;
 }
 
+bool InnerWidget::tooltipWindowActive() const {
+	return Ui::InFocusChain(window());
+}
+
 HistoryView::Context InnerWidget::elementContext() {
 	return HistoryView::Context::AdminLog;
 }
@@ -562,7 +587,6 @@ void InnerWidget::saveState(not_null<SectionMemento*> memento) {
 			base::take(_eventIds),
 			_upLoaded,
 			_downLoaded);
-		memento->setIdManager(base::take(_idManager));
 		base::take(_itemsByData);
 	}
 	_upLoaded = _downLoaded = true; // Don't load or handle anything anymore.
@@ -575,9 +599,6 @@ void InnerWidget::restoreState(not_null<SectionMemento*> memento) {
 		_itemsByData.emplace(item->data(), item.get());
 	}
 	_eventIds = memento->takeEventIds();
-	if (auto manager = memento->takeIdManager()) {
-		_idManager = std::move(manager);
-	}
 	_admins = memento->takeAdmins();
 	_adminsCanEdit = memento->takeAdminsCanEdit();
 	_filter = memento->takeFilter();
@@ -678,7 +699,6 @@ void InnerWidget::addEvents(Direction direction, const QVector<MTPChannelAdminLo
 			GenerateItems(
 				this,
 				_history,
-				_idManager.get(),
 				data,
 				addOne);
 			if (count > 1) {
@@ -768,10 +788,10 @@ int InnerWidget::resizeGetHeight(int newWidth) {
 }
 
 void InnerWidget::restoreScrollPosition() {
-	auto newVisibleTop = _visibleTopItem
+	const auto newVisibleTop = _visibleTopItem
 		? (itemTop(_visibleTopItem) + _visibleTopFromItem)
 		: ScrollMax;
-	scrollToSignal.notify(newVisibleTop, true);
+	_scrollToSignal.fire_copy(newVisibleTop);
 }
 
 void InnerWidget::paintEvent(QPaintEvent *e) {
@@ -883,8 +903,6 @@ void InnerWidget::clearAfterFilterChange() {
 	_items.clear();
 	_eventIds.clear();
 	_itemsByData.clear();
-	_idManager = nullptr;
-	_idManager = _history->adminLogIdManager();
 	updateEmptyText();
 	updateSize();
 }
@@ -924,12 +942,12 @@ TextForMimeData InnerWidget::getSelectedText() const {
 
 void InnerWidget::keyPressEvent(QKeyEvent *e) {
 	if (e->key() == Qt::Key_Escape || e->key() == Qt::Key_Back) {
-		cancelledSignal.notify(true);
+		_cancelSignal.fire({});
 	} else if (e == QKeySequence::Copy && _selectedItem != nullptr) {
 		copySelectedText();
 #ifdef Q_OS_MAC
 	} else if (e->key() == Qt::Key_E && e->modifiers().testFlag(Qt::ControlModifier)) {
-		SetClipboardText(getSelectedText(), QClipboard::FindBuffer);
+		TextUtilities::SetClipboardText(getSelectedText(), QClipboard::FindBuffer);
 #endif // Q_OS_MAC
 	} else {
 		e->ignore();
@@ -1086,7 +1104,7 @@ void InnerWidget::showContextMenu(QContextMenuEvent *e, bool showFromTouch) {
 			_menu->addAction(
 				actionText,
 				[text = link->copyToClipboardText()] {
-					QApplication::clipboard()->setText(text);
+					QGuiApplication::clipboard()->setText(text);
 				});
 		}
 	}
@@ -1127,11 +1145,11 @@ void InnerWidget::saveDocumentToFile(DocumentData *document) {
 void InnerWidget::copyContextImage(PhotoData *photo) {
 	if (!photo || photo->isNull() || !photo->loaded()) return;
 
-	QApplication::clipboard()->setImage(photo->large()->original());
+	QGuiApplication::clipboard()->setImage(photo->large()->original());
 }
 
 void InnerWidget::copySelectedText() {
-	SetClipboardText(getSelectedText());
+	TextUtilities::SetClipboardText(getSelectedText());
 }
 
 void InnerWidget::showStickerPackInfo(not_null<DocumentData*> document) {
@@ -1162,7 +1180,7 @@ void InnerWidget::openContextGif(FullMsgId itemId) {
 
 void InnerWidget::copyContextText(FullMsgId itemId) {
 	if (const auto item = session().data().message(itemId)) {
-		SetClipboardText(HistoryItemText(item));
+		TextUtilities::SetClipboardText(HistoryItemText(item));
 	}
 }
 
@@ -1194,7 +1212,7 @@ void InnerWidget::suggestRestrictUser(not_null<UserData*> user) {
 			});
 			*weakBox = Ui::show(
 				std::move(box),
-				LayerOption::KeepOther);
+				Ui::LayerOption::KeepOther);
 		};
 		if (base::contains(_admins, user)) {
 			editRestrictions(true, MTP_chatBannedRights(MTP_flags(0), MTP_int(0)));
@@ -1312,8 +1330,10 @@ void InnerWidget::mouseActionStart(const QPoint &screenPos, Qt::MouseButton butt
 	_dragStartPosition = mapPointToItem(
 		mapFromGlobal(screenPos),
 		_mouseActionItem);
-	_pressWasInactive = _controller->window()->wasInactivePress();
-	if (_pressWasInactive) _controller->window()->setInactivePress(false);
+	_pressWasInactive = Ui::WasInactivePress(_controller->widget());
+	if (_pressWasInactive) {
+		Ui::MarkInactivePress(_controller->widget(), false);
+	}
 
 	if (ClickHandler::getPressed()) {
 		_mouseAction = MouseAction::PrepareDrag;
@@ -1400,7 +1420,7 @@ void InnerWidget::mouseActionFinish(const QPoint &screenPos, Qt::MouseButton but
 
 	if (activated) {
 		mouseActionCancel();
-		App::activateClickHandler(activated, button);
+		ActivateClickHandler(window(), activated, button);
 		return;
 	}
 	if (_mouseAction == MouseAction::PrepareDrag && !_pressWasInactive && button != Qt::RightButton) {
@@ -1420,7 +1440,7 @@ void InnerWidget::mouseActionFinish(const QPoint &screenPos, Qt::MouseButton but
 
 #if defined Q_OS_LINUX32 || defined Q_OS_LINUX64
 	if (_selectedItem && _selectedText.from != _selectedText.to) {
-		SetClipboardText(
+		TextUtilities::SetClipboardText(
 			_selectedItem->selectedText(_selectedText),
 			QClipboard::Selection);
 	}

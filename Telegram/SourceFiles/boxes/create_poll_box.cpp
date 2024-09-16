@@ -17,10 +17,14 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/widgets/labels.h"
 #include "ui/widgets/buttons.h"
 #include "main/main_session.h"
-#include "core/event_filter.h"
 #include "chat_helpers/emoji_suggestions_widget.h"
+#include "chat_helpers/message_field.h"
+#include "history/view/history_view_schedule_box.h"
 #include "settings/settings_common.h"
 #include "base/unique_qptr.h"
+#include "base/event_filter.h"
+#include "base/call_delayed.h"
+#include "styles/style_layers.h"
 #include "styles/style_boxes.h"
 #include "styles/style_settings.h"
 
@@ -396,7 +400,7 @@ void Options::Option::destroy(FnMut<void()> done) {
 		return;
 	}
 	_field->hide(anim::type::normal);
-	App::CallDelayed(
+	base::call_delayed(
 		st::slideWrapDuration * 2,
 		_field.get(),
 		std::move(done));
@@ -518,14 +522,14 @@ void Options::addEmptyOption() {
 	QObject::connect(field, &Ui::InputField::focused, [=] {
 		_scrollToWidget.fire_copy(field);
 	});
-	Core::InstallEventFilter(field, [=](not_null<QEvent*> event) {
+	base::install_event_filter(field, [=](not_null<QEvent*> event) {
 		if (event->type() != QEvent::KeyPress
 			|| !field->getLastText().isEmpty()) {
-			return false;
+			return base::EventFilterResult::Continue;
 		}
 		const auto key = static_cast<QKeyEvent*>(event.get())->key();
 		if (key != Qt::Key_Backspace) {
-			return false;
+			return base::EventFilterResult::Continue;
 		}
 
 		const auto index = findField(field);
@@ -534,7 +538,7 @@ void Options::addEmptyOption() {
 		} else {
 			_backspaceInFront.fire({});
 		}
-		return true;
+		return base::EventFilterResult::Cancel;
 	});
 
 	_list.back().removeClicks(
@@ -592,11 +596,15 @@ void Options::checkLastOption() {
 
 } // namespace
 
-CreatePollBox::CreatePollBox(QWidget*, not_null<Main::Session*> session)
-: _session(session) {
+CreatePollBox::CreatePollBox(
+	QWidget*,
+	not_null<Main::Session*> session,
+	Api::SendType sendType)
+: _session(session)
+, _sendType(sendType) {
 }
 
-rpl::producer<PollData> CreatePollBox::submitRequests() const {
+rpl::producer<CreatePollBox::Result> CreatePollBox::submitRequests() const {
 	return _submitRequests.events();
 }
 
@@ -703,6 +711,22 @@ object_ptr<Ui::RpWidget> CreatePollBox::setupContent() {
 		result.answers = options->toPollAnswers();
 		return result;
 	};
+	const auto send = [=](Api::SendOptions options) {
+		_submitRequests.fire({ collectResult(), options });
+	};
+	const auto sendSilent = [=] {
+		auto options = Api::SendOptions();
+		options.silent = true;
+		send(options);
+	};
+	const auto sendScheduled = [=] {
+		Ui::show(
+			HistoryView::PrepareScheduleBox(
+				this,
+				SendMenuType::Scheduled,
+				send),
+			Ui::LayerOption::KeepOther);
+	};
 	const auto updateValid = [=] {
 		valid->fire(isValidQuestion() && options->isValid());
 	};
@@ -715,9 +739,16 @@ object_ptr<Ui::RpWidget> CreatePollBox::setupContent() {
 	) | rpl::start_with_next([=](bool valid) {
 		clearButtons();
 		if (valid) {
-			addButton(
+			const auto submit = addButton(
 				tr::lng_polls_create_button(),
-				[=] { _submitRequests.fire(collectResult()); });
+				[=] { send({}); });
+			if (_sendType == Api::SendType::Normal) {
+				SetupSendMenu(
+					submit.data(),
+					[=] { return SendMenuType::Scheduled; },
+					sendSilent,
+					sendScheduled);
+			}
 		}
 		addButton(tr::lng_cancel(), [=] { closeBox(); });
 	}, lifetime());

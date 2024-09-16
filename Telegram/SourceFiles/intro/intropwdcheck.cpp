@@ -41,8 +41,8 @@ PwdCheckWidget::PwdCheckWidget(
 	subscribe(Lang::Current().updated(), [this] { refreshLang(); });
 
 	connect(_checkRequest, SIGNAL(timeout()), this, SLOT(onCheckRequest()));
-	connect(_toRecover, SIGNAL(clicked()), this, SLOT(onToRecover()));
-	connect(_toPassword, SIGNAL(clicked()), this, SLOT(onToPassword()));
+	_toRecover->addClickHandler([=] { onToRecover(); });
+	_toPassword->addClickHandler([=] { onToPassword(); });
 	connect(_pwdField, SIGNAL(changed()), this, SLOT(onInputChange()));
 	connect(_codeField, SIGNAL(changed()), this, SLOT(onInputChange()));
 
@@ -360,7 +360,7 @@ void PwdCheckWidget::submit() {
 		});
 
 		if (_notEmptyPassport) {
-			const auto box = std::make_shared<QPointer<BoxContent>>();
+			const auto box = std::make_shared<QPointer<Ui::BoxContent>>();
 			const auto confirmed = [=] {
 				send();
 				if (*box) {

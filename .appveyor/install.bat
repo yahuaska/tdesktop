@@ -1,6 +1,7 @@
 @echo off
 
 IF "%BUILD_DIR%"=="" SET BUILD_DIR=C:\TBuild
+SET PATH=%PATH%;C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin;C:\Program Files\7-Zip
 SET LIB_DIR=%BUILD_DIR%\Libraries
 SET SRC_DIR=%BUILD_DIR%\tdesktop
 SET QT_VERSION=5_6_2
@@ -28,7 +29,7 @@ GOTO:EOF
     git clone -q --depth 1 --branch master https://github.com/telegramdesktop/dependencies_windows.git %LIB_DIR%
     cd %LIB_DIR%
 
-    git clone --depth 1 --branch 0.5.0 https://github.com/ericniebler/range-v3
+    git clone --depth 1 --branch 0.9.1 https://github.com/ericniebler/range-v3
 
     if exist prepare.bat (
         call prepare.bat
@@ -50,7 +51,9 @@ GOTO:EOF
     git submodule init
     git submodule update
     cd %SRC_DIR%\Telegram
-    call gyp\refresh.bat --api-id 17349 --api-hash 344583e45741c457fe1862106095a5eb
+    IF "%API_ID%"=="" SET API_ID=17349
+    IF "%API_HASH%"=="" SET API_HASH=344583e45741c457fe1862106095a5eb
+    call gyp\refresh.bat --api-id %API_ID% --api-hash %API_HASH%
 GOTO:EOF
 
 :configureBuild

@@ -6,41 +6,44 @@
 
 {
   'includes': [
-    'common.gypi',
+    'helpers/common/common.gypi',
   ],
   'targets': [{
     'target_name': 'lib_scheme',
-    'type': 'static_library',
     'hard_dependency': 1,
     'includes': [
-      'common.gypi',
-      'qt.gypi',
+      'helpers/common/library.gypi',
+      'helpers/modules/qt.gypi',
     ],
     'variables': {
       'src_loc': '../SourceFiles',
       'res_loc': '../Resources',
-      'official_build_target%': '',
-      'submodules_loc': '../ThirdParty',
     },
     'defines': [
     ],
-    'conditions': [[ 'build_macold', {
-      'xcode_settings': {
-        'OTHER_CPLUSPLUSFLAGS': [ '-nostdinc++' ],
-      },
-      'include_dirs': [
-        '/usr/local/macold/include/c++/v1',
-      ],
-    }]],
+    'dependencies': [
+      '<(submodules_loc)/lib_base/lib_base.gyp:lib_base',
+      '<(submodules_loc)/lib_tl/lib_tl.gyp:lib_tl',
+    ],
+    'export_dependent_settings': [
+      '<(submodules_loc)/lib_base/lib_base.gyp:lib_base',
+      '<(submodules_loc)/lib_tl/lib_tl.gyp:lib_tl',
+    ],
     'include_dirs': [
       '<(src_loc)',
       '<(SHARED_INTERMEDIATE_DIR)',
       '<(submodules_loc)/GSL/include',
     ],
+    'direct_dependent_settings': {
+      'include_dirs': [
+        '<(SHARED_INTERMEDIATE_DIR)',
+      ],
+    },
     'actions': [{
       'action_name': 'codegen_scheme',
       'inputs': [
         '<(src_loc)/codegen/scheme/codegen_scheme.py',
+        '<(submodules_loc)/lib_tl/tl/generate_tl.py',
         '<(res_loc)/tl/mtproto.tl',
         '<(res_loc)/tl/api.tl',
       ],
@@ -50,9 +53,9 @@
       ],
       'action': [
         'python', '<(src_loc)/codegen/scheme/codegen_scheme.py',
-        '-o', '<(SHARED_INTERMEDIATE_DIR)',
-		'<(res_loc)/tl/mtproto.tl',
-		'<(res_loc)/tl/api.tl',
+        '-o', '<(SHARED_INTERMEDIATE_DIR)/scheme',
+        '<(res_loc)/tl/mtproto.tl',
+        '<(res_loc)/tl/api.tl',
       ],
       'message': 'codegen_scheme-ing *.tl..',
       'process_outputs_as_sources': 1,

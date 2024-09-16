@@ -11,6 +11,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "data/data_drafts.h"
 #include "data/data_user.h"
 #include "data/data_session.h"
+#include "api/api_text_entities.h"
 #include "history/history.h"
 #include "boxes/abstract_box.h"
 #include "ui/toast/toast.h"
@@ -28,6 +29,8 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "main/main_session.h"
 #include "observer_peer.h"
 #include "apiwrap.h"
+#include "facades.h"
+#include "styles/style_layers.h"
 #include "styles/style_boxes.h"
 
 namespace Main {
@@ -41,7 +44,7 @@ constexpr auto kOccupyFor = TimeId(60);
 constexpr auto kReoccupyEach = 30 * crl::time(1000);
 constexpr auto kMaxSupportInfoLength = MaxMessageSize * 4;
 
-class EditInfoBox : public BoxContent {
+class EditInfoBox : public Ui::BoxContent {
 public:
 	EditInfoBox(
 		QWidget*,
@@ -449,7 +452,7 @@ void Helper::applyInfo(
 		info.date = data.vdate().v;
 		info.text = TextWithEntities{
 			qs(data.vmessage()),
-			TextUtilities::EntitiesFromMTP(data.ventities().v) };
+			Api::EntitiesFromMTP(data.ventities().v) };
 		if (info.text.empty()) {
 			remove();
 		} else if (_userInformation[user] != info) {
@@ -504,18 +507,18 @@ void Helper::showEditInfoBox(not_null<UserData*> user) {
 	const auto info = infoCurrent(user);
 	const auto editData = TextWithTags{
 		info.text.text,
-		ConvertEntitiesToTextTags(info.text.entities)
+		TextUtilities::ConvertEntitiesToTextTags(info.text.entities)
 	};
 
 	const auto save = [=](TextWithTags result, Fn<void(bool)> done) {
 		saveInfo(user, TextWithEntities{
 			result.text,
-			ConvertTextTagsToEntities(result.tags)
+			TextUtilities::ConvertTextTagsToEntities(result.tags)
 		}, done);
 	};
 	Ui::show(
 		Box<EditInfoBox>(&user->session(), editData, save),
-		LayerOption::KeepOther);
+		Ui::LayerOption::KeepOther);
 }
 
 void Helper::saveInfo(
@@ -539,9 +542,9 @@ void Helper::saveInfo(
 		Ui::ItemTextDefaultOptions().flags);
 	TextUtilities::Trim(text);
 
-	const auto entities = TextUtilities::EntitiesToMTP(
+	const auto entities = Api::EntitiesToMTP(
 		text.entities,
-		TextUtilities::ConvertOption::SkipLocal);
+		Api::ConvertOption::SkipLocal);
 	_userInfoSaving[user].requestId = request(MTPhelp_EditUserInfo(
 		user->inputUser,
 		MTP_string(text.text),
@@ -604,12 +607,12 @@ QString InterpretSendPath(const QString &path) {
 		return "App Error: Could not find channel with id: " + QString::number(peerToChannel(toId));
 	}
 	Ui::showPeerHistory(history, ShowAtUnreadMsgId);
-	Auth().api().sendFiles(
+	history->session().api().sendFiles(
 		Storage::PrepareMediaList(QStringList(filePath), st::sendMediaPreviewSize),
 		SendMediaType::File,
 		{ caption },
 		nullptr,
-		ApiWrap::SendOptions(history));
+		Api::SendAction(history));
 	return QString();
 }
 

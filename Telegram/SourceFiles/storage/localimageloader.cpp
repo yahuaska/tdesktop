@@ -7,6 +7,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "storage/localimageloader.h"
 
+#include "api/api_text_entities.h"
 #include "data/data_document.h"
 #include "data/data_session.h"
 #include "core/file_utilities.h"
@@ -21,9 +22,13 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "lang/lang_keys.h"
 #include "storage/file_download.h"
 #include "storage/storage_media_prepare.h"
+#include "window/themes/window_theme_preview.h"
 #include "mainwidget.h"
 #include "mainwindow.h"
 #include "main/main_session.h"
+#include "app.h"
+
+#include <QtCore/QBuffer>
 
 namespace {
 
@@ -76,13 +81,6 @@ PreparedFileThumbnail PrepareFileThumbnail(QImage &&original) {
 	return result;
 }
 
-PreparedFileThumbnail PrepareAnimatedStickerThumbnail(
-		const QString &file,
-		const QByteArray &bytes) {
-	return PrepareFileThumbnail(
-		Lottie::ReadThumbnail(Lottie::ReadContent(bytes, file)));
-}
-
 bool FileThumbnailUploadRequired(const QString &filemime, int32 filesize) {
 	constexpr auto kThumbnailUploadBySize = 5 * 1024 * 1024;
 	const auto kThumbnailKnownMimes = {
@@ -129,9 +127,9 @@ MTPInputSingleMedia PrepareAlbumItemMedia(
 		uint64 randomId) {
 	auto caption = item->originalText();
 	TextUtilities::Trim(caption);
-	auto sentEntities = TextUtilities::EntitiesToMTP(
+	auto sentEntities = Api::EntitiesToMTP(
 		caption.entities,
-		TextUtilities::ConvertOption::SkipLocal);
+		Api::ConvertOption::SkipLocal);
 	const auto flags = !sentEntities.v.isEmpty()
 		? MTPDinputSingleMedia::Flag::f_entities
 		: MTPDinputSingleMedia::Flag(0);
@@ -240,68 +238,6 @@ SendMediaReady PreparePeerPhoto(PeerId peerId, QImage &&image) {
 		photoThumbs,
 		MTP_documentEmpty(MTP_long(0)),
 		jpeg,
-		0);
-}
-
-SendMediaReady PrepareWallPaper(const QImage &image) {
-	PreparedPhotoThumbs thumbnails;
-	QVector<MTPPhotoSize> sizes;
-
-	QByteArray jpeg;
-	QBuffer jpegBuffer(&jpeg);
-	image.save(&jpegBuffer, "JPG", 87);
-
-	const auto scaled = [&](int size) {
-		return image.scaled(
-			size,
-			size,
-			Qt::KeepAspectRatio,
-			Qt::SmoothTransformation);
-	};
-	const auto push = [&](const char *type, QImage &&image) {
-		sizes.push_back(MTP_photoSize(
-			MTP_string(type),
-			MTP_fileLocationToBeDeprecated(MTP_long(0), MTP_int(0)),
-			MTP_int(image.width()),
-			MTP_int(image.height()), MTP_int(0)));
-		thumbnails.emplace(type[0], std::move(image));
-	};
-	push("s", scaled(320));
-
-	const auto filename = qsl("wallpaper.jpg");
-	auto attributes = QVector<MTPDocumentAttribute>(
-		1,
-		MTP_documentAttributeFilename(MTP_string(filename)));
-	attributes.push_back(MTP_documentAttributeImageSize(
-		MTP_int(image.width()),
-		MTP_int(image.height())));
-	const auto id = rand_value<DocumentId>();
-	const auto document = MTP_document(
-		MTP_flags(0),
-		MTP_long(id),
-		MTP_long(0),
-		MTP_bytes(),
-		MTP_int(base::unixtime::now()),
-		MTP_string("image/jpeg"),
-		MTP_int(jpeg.size()),
-		MTP_vector<MTPPhotoSize>(sizes),
-		MTP_int(MTP::maindc()),
-		MTP_vector<MTPDocumentAttribute>(attributes));
-
-	return SendMediaReady(
-		SendMediaType::WallPaper,
-		QString(), // filepath
-		filename,
-		jpeg.size(),
-		jpeg,
-		id,
-		0,
-		QString(),
-		PeerId(),
-		MTP_photoEmpty(MTP_long(0)),
-		thumbnails,
-		document,
-		QByteArray(),
 		0);
 }
 
@@ -463,6 +399,7 @@ void SendingAlbum::fillMedia(
 	const auto i = FindAlbumItem(items, item);
 	Assert(!i->media);
 
+	i->randomId = randomId;
 	i->media = PrepareAlbumItemMedia(item, media, randomId);
 }
 
@@ -877,6 +814,15 @@ void FileLoadTask::process() {
 			}
 
 			thumbnail = PrepareFileThumbnail(std::move(video->thumbnail));
+		} else if (filemime == qstr("application/x-tdesktop-theme")
+			|| filemime == qstr("application/x-tgtheme-tdesktop")) {
+			goodThumbnail = Window::Theme::GeneratePreview(_content, _filepath);
+			if (!goodThumbnail.isNull()) {
+				QBuffer buffer(&goodThumbnailBytes);
+				goodThumbnail.save(&buffer, "JPG", kThumbnailQuality);
+
+				thumbnail = PrepareFileThumbnail(base::duplicate(goodThumbnail));
+			}
 		}
 	}
 
@@ -1007,13 +953,13 @@ void FileLoadTask::finish() {
 		Ui::show(
 			Box<InformBox>(
 				tr::lng_send_image_empty(tr::now, lt_name, _filepath)),
-			LayerOption::KeepOther);
+			Ui::LayerOption::KeepOther);
 		removeFromAlbum();
 	} else if (_result->filesize > App::kFileSizeLimit) {
 		Ui::show(
 			Box<InformBox>(
 				tr::lng_send_image_too_large(tr::now, lt_name, _filepath)),
-			LayerOption::KeepOther);
+			Ui::LayerOption::KeepOther);
 		removeFromAlbum();
 	} else if (App::main()) {
 		const auto fullId = _msgIdToEdit

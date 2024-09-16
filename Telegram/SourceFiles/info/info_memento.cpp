@@ -17,6 +17,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "info/info_section_widget.h"
 #include "info/info_layer_widget.h"
 #include "info/info_controller.h"
+#include "ui/ui_utility.h"
 #include "boxes/peer_list_box.h"
 #include "data/data_channel.h"
 #include "data/data_chat.h"
@@ -162,7 +163,7 @@ object_ptr<Window::SectionWidget> Memento::createWidget(
 	return std::move(result);
 }
 
-object_ptr<Window::LayerWidget> Memento::createLayer(
+object_ptr<Ui::LayerWidget> Memento::createLayer(
 		not_null<Window::SessionController*> controller,
 		const QRect &geometry) {
 	if (geometry.width() >= LayerWidget::MinimalSupportedWidth()) {
@@ -200,7 +201,7 @@ object_ptr<Window::SectionWidget> MoveMemento::createWidget(
 	return std::move(result);
 }
 
-object_ptr<Window::LayerWidget> MoveMemento::createLayer(
+object_ptr<Ui::LayerWidget> MoveMemento::createLayer(
 		not_null<Window::SessionController*> controller,
 		const QRect &geometry) {
 	if (geometry.width() < LayerWidget::MinimalSupportedWidth()) {

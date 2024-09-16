@@ -23,6 +23,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "history/view/media/history_view_call.h"
 #include "history/view/media/history_view_web_page.h"
 #include "history/view/media/history_view_poll.h"
+#include "history/view/media/history_view_theme_document.h"
 #include "ui/image/image.h"
 #include "ui/image/image_source.h"
 #include "ui/text_options.h"
@@ -39,6 +40,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "lang/lang_keys.h"
 #include "layout.h"
 #include "storage/file_upload.h"
+#include "app.h"
 
 namespace Data {
 namespace {
@@ -778,6 +780,10 @@ std::unique_ptr<HistoryView::Media> MediaFile::createView(
 		return std::make_unique<HistoryView::Video>(
 			message,
 			realParent,
+			_document);
+	} else if (_document->isTheme() && _document->hasThumbnail()) {
+		return std::make_unique<HistoryView::ThemeDocument>(
+			message,
 			_document);
 	}
 	return std::make_unique<HistoryView::Document>(message, _document);

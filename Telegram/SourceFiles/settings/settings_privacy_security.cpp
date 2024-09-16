@@ -21,10 +21,10 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/wrap/fade_wrap.h"
 #include "ui/widgets/shadow.h"
 #include "ui/widgets/labels.h"
+#include "ui/widgets/buttons.h"
 #include "calls/calls_instance.h"
 #include "core/core_cloud_password.h"
 #include "core/update_checker.h"
-#include "info/profile/info_profile_button.h"
 #include "platform/platform_specific.h"
 #include "lang/lang_keys.h"
 #include "data/data_session.h"
@@ -33,8 +33,11 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "main/main_session.h"
 #include "window/window_session_controller.h"
 #include "apiwrap.h"
+#include "facades.h"
 #include "styles/style_settings.h"
 #include "styles/style_boxes.h"
+
+#include <QtGui/QGuiApplication>
 
 namespace Settings {
 namespace {
@@ -172,6 +175,8 @@ void SetupPrivacy(
 		tr::lng_settings_groups_invite(),
 		Key::Invites,
 		[] { return std::make_unique<GroupsInvitePrivacyController>(); });
+
+	session->api().reloadPrivacy(ApiWrap::Privacy::Key::AddedByPhone);
 
 	AddSkip(container, st::settingsPrivacySecurityPadding);
 	AddDividerText(container, tr::lng_settings_group_privacy_about());
@@ -499,7 +504,7 @@ bool CheckEditCloudPassword(not_null<::Main::Session*> session) {
 	return false;
 }
 
-object_ptr<BoxContent> EditCloudPasswordBox(not_null<Main::Session*> session) {
+object_ptr<Ui::BoxContent> EditCloudPasswordBox(not_null<Main::Session*> session) {
 	const auto current = session->api().passwordStateCurrent();
 	Assert(current.has_value());
 
@@ -549,8 +554,8 @@ void RemoveCloudPassword(not_null<::Main::Session*> session) {
 	}, box->lifetime());
 }
 
-object_ptr<BoxContent> CloudPasswordAppOutdatedBox() {
-	auto box = std::make_shared<QPointer<BoxContent>>();
+object_ptr<Ui::BoxContent> CloudPasswordAppOutdatedBox() {
+	auto box = std::make_shared<QPointer<Ui::BoxContent>>();
 	const auto callback = [=] {
 		Core::UpdateApplication();
 		if (*box) (*box)->closeBox();
@@ -584,7 +589,7 @@ void AddPrivacyButton(
 		) | rpl::start_with_next([=](const Privacy &value) {
 			Ui::show(
 				Box<EditPrivacyBox>(controller, controllerFactory(), value),
-				LayerOption::KeepOther);
+				Ui::LayerOption::KeepOther);
 		});
 	});
 }

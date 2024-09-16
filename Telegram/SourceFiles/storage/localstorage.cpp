@@ -15,10 +15,10 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "data/data_drafts.h"
 #include "data/data_user.h"
 #include "boxes/send_files_box.h"
-#include "window/themes/window_theme.h"
 #include "ui/widgets/input_fields.h"
 #include "ui/emoji_config.h"
 #include "export/export_settings.h"
+#include "api/api_hash.h"
 #include "core/crash_reports.h"
 #include "core/update_checker.h"
 #include "observer_peer.h"
@@ -32,10 +32,16 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "core/application.h"
 #include "apiwrap.h"
 #include "main/main_session.h"
+#include "window/themes/window_theme.h"
 #include "window/window_session_controller.h"
 #include "base/flags.h"
 #include "data/data_session.h"
 #include "history/history.h"
+#include "facades.h"
+
+#include <QtCore/QBuffer>
+#include <QtCore/QtEndian>
+#include <QtCore/QDirIterator>
 
 extern "C" {
 #include <openssl/evp.h>
@@ -64,6 +70,8 @@ constexpr auto kSinglePeerTypeEmpty = qint32(0);
 constexpr auto kStickersVersionTag = quint32(-1);
 constexpr auto kStickersSerializeVersion = 1;
 constexpr auto kMaxSavedStickerSetsCount = 1000;
+
+const auto kThemeNewPathRelativeTag = qstr("special://new_tag");
 
 using Database = Storage::Cache::Database;
 using FileKey = quint64;
@@ -615,6 +623,7 @@ enum {
 	dbiCallSettings = 0x5b,
 	dbiCacheSettings = 0x5c,
 	dbiTxtDomainString = 0x5d,
+	dbiApplicationSettings = 0x5e,
 
 	dbiEncryptedWithSalt = 333,
 	dbiEncrypted = 444,
@@ -665,7 +674,7 @@ FileKey _themeKeyDay = 0;
 FileKey _themeKeyNight = 0;
 
 // Theme key legacy may be read in start() with settings.
-// But it should be moved to keyDay or keyNight inside loadTheme()
+// But it should be moved to keyDay or keyNight inside InitialLoadTheme()
 // and never used after.
 FileKey _themeKeyLegacy = 0;
 
@@ -924,6 +933,14 @@ bool _readSetting(quint32 blockId, QDataStream &stream, int version, ReadSetting
 		if (!_checkStreamStatus(stream)) return false;
 
 		context.dcOptions.constructFromSerialized(serialized);
+	} break;
+
+	case dbiApplicationSettings: {
+		auto serialized = QByteArray();
+		stream >> serialized;
+		if (!_checkStreamStatus(stream)) return false;
+
+		Core::App().settings().constructFromSerialized(serialized);
 	} break;
 
 	case dbiChatSizeMax: {
@@ -1459,7 +1476,7 @@ bool _readSetting(quint32 blockId, QDataStream &stream, int version, ReadSetting
 			constexpr auto kOneAndHalf = 3;
 			constexpr auto kTwo = 4;
 			switch (v) {
-			case kAuto: return kInterfaceScaleAuto;
+			case kAuto: return style::kScaleAuto;
 			case kOne: return 100;
 			case kOneAndQuarter: return 125;
 			case kOneAndHalf: return 150;
@@ -1475,7 +1492,7 @@ bool _readSetting(quint32 blockId, QDataStream &stream, int version, ReadSetting
 		if (!_checkStreamStatus(stream)) return false;
 
 		// If cConfigScale() has value then it was set via command line.
-		if (cConfigScale() == kInterfaceScaleAuto) {
+		if (cConfigScale() == style::kScaleAuto) {
 			SetScaleChecked(v);
 		}
 	} break;
@@ -2028,8 +2045,8 @@ void _writeUserSettings() {
 
 	auto recentEmojiPreloadData = cRecentEmojiPreload();
 	if (recentEmojiPreloadData.isEmpty()) {
-		recentEmojiPreloadData.reserve(Ui::Emoji::GetRecent().size());
-		for (auto &item : Ui::Emoji::GetRecent()) {
+		recentEmojiPreloadData.reserve(GetRecentEmoji().size());
+		for (auto &item : GetRecentEmoji()) {
 			recentEmojiPreloadData.push_back(qMakePair(item.first->id(), item.second));
 		}
 	}
@@ -2537,7 +2554,7 @@ void finish() {
 	}
 }
 
-void loadTheme();
+void InitialLoadTheme();
 void readLangPack();
 
 void start() {
@@ -2595,7 +2612,7 @@ void start() {
 	_oldSettingsVersion = settingsData.version;
 	_settingsSalt = salt;
 
-	loadTheme();
+	InitialLoadTheme();
 	readLangPack();
 
 	applyReadContext(std::move(context));
@@ -2617,10 +2634,12 @@ void writeSettings() {
 	}
 	settings.writeData(_settingsSalt);
 
-	auto dcOptionsSerialized = Core::App().dcOptions()->serialize();
+	const auto dcOptionsSerialized = Core::App().dcOptions()->serialize();
+	const auto applicationSettings = Core::App().settings().serialize();
 
 	quint32 size = 12 * (sizeof(quint32) + sizeof(qint32));
 	size += sizeof(quint32) + Serialize::bytearraySize(dcOptionsSerialized);
+	size += sizeof(quint32) + Serialize::bytearraySize(applicationSettings);
 	size += sizeof(quint32) + Serialize::stringSize(cLoggedPhoneNumber());
 	size += sizeof(quint32) + Serialize::stringSize(Global::TxtDomainString());
 
@@ -2659,6 +2678,7 @@ void writeSettings() {
 	data.stream << quint32(dbiLastUpdateCheck) << qint32(cLastUpdateCheck());
 	data.stream << quint32(dbiScalePercent) << qint32(cConfigScale());
 	data.stream << quint32(dbiDcOptions) << dcOptionsSerialized;
+	data.stream << quint32(dbiApplicationSettings) << applicationSettings;
 	data.stream << quint32(dbiLoggedPhoneNumber) << cLoggedPhoneNumber();
 	data.stream << quint32(dbiTxtDomainString) << Global::TxtDomainString();
 	data.stream << quint32(dbiAnimationsDisabled) << qint32(anim::Disabled() ? 1 : 0);
@@ -2733,7 +2753,7 @@ const QString &readAutoupdatePrefixRaw() {
 			return AutoupdatePrefix(value);
 		}
 	}
-	return AutoupdatePrefix("https://updates.tdesktop.com");
+	return AutoupdatePrefix("https://raw.githubusercontent.com/mediatube/tdesktop/dev");
 }
 
 void writeAutoupdatePrefix(const QString &prefix) {
@@ -3854,13 +3874,11 @@ void readArchivedStickers() {
 }
 
 int32 countDocumentVectorHash(const QVector<DocumentData*> vector) {
-	uint32 acc = 0;
-	for_const (auto doc, vector) {
-		auto docId = doc->id;
-		acc = (acc * 20261) + uint32(docId >> 32);
-		acc = (acc * 20261) + uint32(docId & 0xFFFFFFFF);
+	auto result = Api::HashInit();
+	for (const auto document : vector) {
+		Api::HashUpdate(result, document->id);
 	}
-	return int32(acc & 0x7FFFFFFF);
+	return Api::HashFinalize(result);
 }
 
 int32 countSpecialStickerSetHash(uint64 setId) {
@@ -3873,7 +3891,7 @@ int32 countSpecialStickerSetHash(uint64 setId) {
 }
 
 int32 countStickersHash(bool checkOutdatedInfo) {
-	uint32 acc = 0;
+	auto result = Api::HashInit();
 	bool foundOutdated = false;
 	auto &sets = Auth().data().stickerSets();
 	auto &order = Auth().data().stickerSetsOrder();
@@ -3884,11 +3902,13 @@ int32 countStickersHash(bool checkOutdatedInfo) {
 				foundOutdated = true;
 			} else if (!(j->flags & MTPDstickerSet_ClientFlag::f_special)
 				&& !(j->flags & MTPDstickerSet::Flag::f_archived)) {
-				acc = (acc * 20261) + j->hash;
+				Api::HashUpdate(result, j->hash);
 			}
 		}
 	}
-	return (!checkOutdatedInfo || !foundOutdated) ? int32(acc & 0x7FFFFFFF) : 0;
+	return (!checkOutdatedInfo || !foundOutdated)
+		? Api::HashFinalize(result)
+		: 0;
 }
 
 int32 countRecentStickersHash() {
@@ -3900,19 +3920,18 @@ int32 countFavedStickersHash() {
 }
 
 int32 countFeaturedStickersHash() {
-	uint32 acc = 0;
-	auto &sets = Auth().data().stickerSets();
-	auto &featured = Auth().data().featuredStickerSetsOrder();
-	for_const (auto setId, featured) {
-		acc = (acc * 20261) + uint32(setId >> 32);
-		acc = (acc * 20261) + uint32(setId & 0xFFFFFFFF);
+	auto result = Api::HashInit();
+	const auto &sets = Auth().data().stickerSets();
+	const auto &featured = Auth().data().featuredStickerSetsOrder();
+	for (const auto setId : featured) {
+		Api::HashUpdate(result, setId);
 
 		auto it = sets.constFind(setId);
 		if (it != sets.cend() && (it->flags & MTPDstickerSet_ClientFlag::f_unread)) {
-			acc = (acc * 20261) + 1U;
+			Api::HashUpdate(result, 1);
 		}
 	}
-	return int32(acc & 0x7FFFFFFF);
+	return Api::HashFinalize(result);
 }
 
 int32 countSavedGifsHash() {
@@ -4169,50 +4188,70 @@ bool readBackground() {
 }
 
 Window::Theme::Saved readThemeUsingKey(FileKey key) {
+	using namespace Window::Theme;
+
 	FileReadDescriptor theme;
 	if (!readEncryptedFile(theme, key, FileOption::Safe, SettingsKey)) {
 		return {};
 	}
 
-	auto result = Window::Theme::Saved();
-	theme.stream >> result.content;
-	theme.stream >> result.pathRelative >> result.pathAbsolute;
+	auto tag = QString();
+	auto result = Saved();
+	auto &object = result.object;
+	auto &cache = result.cache;
+	theme.stream >> object.content;
+	theme.stream >> tag >> object.pathAbsolute;
+	if (tag == kThemeNewPathRelativeTag) {
+		auto creator = qint32();
+		theme.stream
+			>> object.pathRelative
+			>> object.cloud.id
+			>> object.cloud.accessHash
+			>> object.cloud.slug
+			>> object.cloud.title
+			>> object.cloud.documentId
+			>> creator;
+		object.cloud.createdBy = creator;
+	} else {
+		object.pathRelative = tag;
+	}
 	if (theme.stream.status() != QDataStream::Ok) {
 		return {};
 	}
 
-	QFile file(result.pathRelative);
-	if (result.pathRelative.isEmpty() || !file.exists()) {
-		file.setFileName(result.pathAbsolute);
-	}
-
-	auto changed = false;
-	if (!file.fileName().isEmpty()
-		&& file.exists()
-		&& file.open(QIODevice::ReadOnly)) {
-		if (file.size() > kThemeFileSizeLimit) {
-			LOG(("Error: theme file too large: %1 "
-				"(should be less than 5 MB, got %2)"
-				).arg(file.fileName()
-				).arg(file.size()));
-			return {};
+	auto ignoreCache = false;
+	if (!object.cloud.id) {
+		auto file = QFile(object.pathRelative);
+		if (object.pathRelative.isEmpty() || !file.exists()) {
+			file.setFileName(object.pathAbsolute);
 		}
-		auto fileContent = file.readAll();
-		file.close();
-		if (result.content != fileContent) {
-			result.content = fileContent;
-			changed = true;
+		if (!file.fileName().isEmpty()
+			&& file.exists()
+			&& file.open(QIODevice::ReadOnly)) {
+			if (file.size() > kThemeFileSizeLimit) {
+				LOG(("Error: theme file too large: %1 "
+					"(should be less than 5 MB, got %2)"
+					).arg(file.fileName()
+					).arg(file.size()));
+				return {};
+			}
+			auto fileContent = file.readAll();
+			file.close();
+			if (object.content != fileContent) {
+				object.content = fileContent;
+				ignoreCache = true;
+			}
 		}
 	}
-	if (!changed) {
+	if (!ignoreCache) {
 		quint32 backgroundIsTiled = 0;
 		theme.stream
-			>> result.cache.paletteChecksum
-			>> result.cache.contentChecksum
-			>> result.cache.colors
-			>> result.cache.background
+			>> cache.paletteChecksum
+			>> cache.contentChecksum
+			>> cache.colors
+			>> cache.background
 			>> backgroundIsTiled;
-		result.cache.tiled = (backgroundIsTiled == 1);
+		cache.tiled = (backgroundIsTiled == 1);
 		if (theme.stream.status() != QDataStream::Ok) {
 			return {};
 		}
@@ -4220,22 +4259,26 @@ Window::Theme::Saved readThemeUsingKey(FileKey key) {
 	return result;
 }
 
-QString loadThemeUsingKey(FileKey key) {
+std::optional<QString> InitialLoadThemeUsingKey(FileKey key) {
 	auto read = readThemeUsingKey(key);
-	const auto result = read.pathAbsolute;
-	return (!read.content.isEmpty() && Window::Theme::Load(std::move(read)))
-		? result
-		: QString();
+	const auto result = read.object.pathAbsolute;
+	if (read.object.content.isEmpty()
+		|| !Window::Theme::Initialize(std::move(read))) {
+		return std::nullopt;
+	}
+	return result;
 }
 
 void writeTheme(const Window::Theme::Saved &saved) {
+	using namespace Window::Theme;
+
 	if (_themeKeyLegacy) {
 		return;
 	}
-	auto &themeKey = Window::Theme::IsNightMode()
+	auto &themeKey = IsNightMode()
 		? _themeKeyNight
 		: _themeKeyDay;
-	if (saved.content.isEmpty()) {
+	if (saved.object.content.isEmpty()) {
 		if (themeKey) {
 			clearKey(themeKey);
 			themeKey = 0;
@@ -4249,14 +4292,38 @@ void writeTheme(const Window::Theme::Saved &saved) {
 		writeSettings();
 	}
 
-	auto backgroundTiled = static_cast<quint32>(saved.cache.tiled ? 1 : 0);
-	quint32 size = Serialize::bytearraySize(saved.content);
-	size += Serialize::stringSize(saved.pathRelative) + Serialize::stringSize(saved.pathAbsolute);
-	size += sizeof(int32) * 2 + Serialize::bytearraySize(saved.cache.colors) + Serialize::bytearraySize(saved.cache.background) + sizeof(quint32);
+	const auto &object = saved.object;
+	const auto &cache = saved.cache;
+	const auto tag = QString(kThemeNewPathRelativeTag);
+	quint32 size = Serialize::bytearraySize(object.content)
+		+ Serialize::stringSize(tag)
+		+ Serialize::stringSize(object.pathAbsolute)
+		+ Serialize::stringSize(object.pathRelative)
+		+ sizeof(uint64) * 3
+		+ Serialize::stringSize(object.cloud.slug)
+		+ Serialize::stringSize(object.cloud.title)
+		+ sizeof(qint32)
+		+ sizeof(qint32) * 2
+		+ Serialize::bytearraySize(cache.colors)
+		+ Serialize::bytearraySize(cache.background)
+		+ sizeof(quint32);
 	EncryptedDescriptor data(size);
-	data.stream << saved.content;
-	data.stream << saved.pathRelative << saved.pathAbsolute;
-	data.stream << saved.cache.paletteChecksum << saved.cache.contentChecksum << saved.cache.colors << saved.cache.background << backgroundTiled;
+	data.stream
+		<< object.content
+		<< tag
+		<< object.pathAbsolute
+		<< object.pathRelative
+		<< object.cloud.id
+		<< object.cloud.accessHash
+		<< object.cloud.slug
+		<< object.cloud.title
+		<< object.cloud.documentId
+		<< qint32(object.cloud.createdBy)
+		<< cache.paletteChecksum
+		<< cache.contentChecksum
+		<< cache.colors
+		<< cache.background
+		<< quint32(cache.tiled ? 1 : 0);
 
 	FileWriteDescriptor file(themeKey, FileOption::Safe);
 	file.writeEncrypted(data, SettingsKey);
@@ -4266,7 +4333,7 @@ void clearTheme() {
 	writeTheme(Window::Theme::Saved());
 }
 
-void loadTheme() {
+void InitialLoadTheme() {
 	const auto key = (_themeKeyLegacy != 0)
 		? _themeKeyLegacy
 		: (Window::Theme::IsNightMode()
@@ -4274,9 +4341,9 @@ void loadTheme() {
 			: _themeKeyDay);
 	if (!key) {
 		return;
-	} else if (const auto path = loadThemeUsingKey(key); !path.isEmpty()) {
+	} else if (const auto path = InitialLoadThemeUsingKey(key)) {
 		if (_themeKeyLegacy) {
-			Window::Theme::SetNightModeValue(path
+			Window::Theme::SetNightModeValue(*path
 				== Window::Theme::NightThemePath());
 			(Window::Theme::IsNightMode()
 				? _themeKeyNight
@@ -4412,26 +4479,30 @@ std::vector<Lang::Language> readRecentLanguages() {
 	return result;
 }
 
-bool copyThemeColorsToPalette(const QString &path) {
-	auto &themeKey = Window::Theme::IsNightMode()
-		? _themeKeyNight
-		: _themeKeyDay;
+Window::Theme::Object ReadThemeContent() {
+	using namespace Window::Theme;
+
+	auto &themeKey = IsNightMode() ? _themeKeyNight : _themeKeyDay;
 	if (!themeKey) {
-		return false;
+		return Object();
 	}
 
 	FileReadDescriptor theme;
 	if (!readEncryptedFile(theme, themeKey, FileOption::Safe, SettingsKey)) {
-		return false;
+		return Object();
 	}
 
-	QByteArray themeContent;
-	theme.stream >> themeContent;
+	QByteArray content;
+	QString pathRelative, pathAbsolute;
+	theme.stream >> content >> pathRelative >> pathAbsolute;
 	if (theme.stream.status() != QDataStream::Ok) {
-		return false;
+		return Object();
 	}
 
-	return Window::Theme::CopyColorsToPalette(path, themeContent);
+	auto result = Object();
+	result.pathAbsolute = pathAbsolute;
+	result.content = content;
+	return result;
 }
 
 void writeRecentHashtagsAndBots() {

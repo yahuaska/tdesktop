@@ -7,10 +7,11 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #pragma once
 
-class GenericBox;
+class History;
 
 namespace Ui {
 class RpWidget;
+class GenericBox;
 } // namespace Ui
 
 namespace Data {
@@ -59,7 +60,7 @@ void PeerMenuAddChannelMembers(
 //void PeerMenuUngroupFeed(not_null<Data::Feed*> feed); // #feed
 void PeerMenuCreatePoll(not_null<PeerData*> peer);
 void PeerMenuBlockUserBox(
-	not_null<GenericBox*> box,
+	not_null<Ui::GenericBox*> box,
 	not_null<Window::Controller*> window,
 	not_null<UserData*> user,
 	bool suggestClearChat);
@@ -71,6 +72,12 @@ Fn<void()> DeleteAndLeaveHandler(not_null<PeerData*> peer);
 
 QPointer<Ui::RpWidget> ShowForwardMessagesBox(
 	not_null<Window::SessionNavigation*> navigation,
+	MessageIdsList &&items,
+	FnMut<void()> &&successCallback = nullptr);
+
+QPointer<Ui::RpWidget> ShowSendNowMessagesBox(
+	not_null<Window::SessionNavigation*> navigation,
+	not_null<History*> history,
 	MessageIdsList &&items,
 	FnMut<void()> &&successCallback = nullptr);
 

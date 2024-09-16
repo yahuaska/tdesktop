@@ -7,6 +7,11 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #pragma once
 
+#include <QtWidgets/QApplication>
+#include <QtNetwork/QLocalServer>
+#include <QtNetwork/QLocalSocket>
+#include <QtCore/QAbstractNativeEventFilter>
+
 namespace Core {
 
 class Launcher;
@@ -43,18 +48,14 @@ public:
 		return callable();
 	}
 
-	void activateWindowDelayed(not_null<QWidget*> widget);
-	void pauseDelayedWindowActivations();
-	void resumeDelayedWindowActivations();
-
 	rpl::producer<> widgetUpdateRequests() const;
 
 	ProxyData sandboxProxy() const;
 
 	static Sandbox &Instance() {
-		Expects(QApplication::instance() != nullptr);
+		Expects(QCoreApplication::instance() != nullptr);
 
-		return *static_cast<Sandbox*>(QApplication::instance());
+		return *static_cast<Sandbox*>(QCoreApplication::instance());
 	}
 
 	~Sandbox();
@@ -104,9 +105,7 @@ private:
 	int _loopNestingLevel = 0;
 	std::vector<int> _previousLoopNestingLevels;
 	std::vector<PostponedCall> _postponedCalls;
-
-	QPointer<QWidget> _windowForDelayedActivation;
-	bool _delayedActivationsPaused = false;
+	SingleQueuedInvokation _handleObservables;
 
 	not_null<Launcher*> _launcher;
 	std::unique_ptr<Application> _application;

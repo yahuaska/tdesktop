@@ -101,7 +101,7 @@ private:
 
 };
 
-class RoundButton : public RippleButton, private base::Subscriber {
+class RoundButton : public RippleButton {
 public:
 	RoundButton(
 		QWidget *parent,
@@ -181,25 +181,6 @@ private:
 	const style::color *_rippleColorOverride = nullptr;
 
 	Ui::Animations::Simple _a_over;
-
-};
-
-class LeftOutlineButton : public RippleButton {
-public:
-	LeftOutlineButton(QWidget *parent, const QString &text, const style::OutlineButton &st = st::defaultLeftOutlineButton);
-
-	void setText(const QString &text);
-
-protected:
-	void paintEvent(QPaintEvent *e) override;
-
-	int resizeGetHeight(int newWidth) override;
-
-private:
-	QString _text, _fullText;
-	int _textWidth, _fullTextWidth;
-
-	const style::OutlineButton &_st;
 
 };
 

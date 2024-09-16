@@ -8,7 +8,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #pragma once
 
 #include "ui/toast/toast.h"
-#include "ui/twidget.h"
+#include "ui/rp_widget.h"
 #include "ui/text/text.h"
 
 namespace Ui {
@@ -28,6 +28,10 @@ protected:
 	void paintEvent(QPaintEvent *e) override;
 
 private:
+	inline int widthWithoutPadding(int w) {
+		return w - _padding.left() - _padding.right();
+	}
+
 	float64 _shownLevel = 0;
 	bool _multiline = false;
 	int _maxWidth = 0;

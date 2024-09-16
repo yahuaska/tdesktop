@@ -8,12 +8,13 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "boxes/edit_caption_box.h"
 
 #include "apiwrap.h"
+#include "api/api_text_entities.h"
 #include "main/main_session.h"
 #include "chat_helpers/emoji_suggestions_widget.h"
 #include "chat_helpers/message_field.h"
 #include "chat_helpers/tabbed_panel.h"
 #include "chat_helpers/tabbed_selector.h"
-#include "core/event_filter.h"
+#include "base/event_filter.h"
 #include "core/file_utilities.h"
 #include "core/mime_type.h"
 #include "data/data_document.h"
@@ -21,22 +22,29 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "data/data_photo.h"
 #include "data/data_user.h"
 #include "data/data_session.h"
+#include "data/data_file_origin.h"
 #include "history/history.h"
 #include "history/history_item.h"
 #include "lang/lang_keys.h"
 #include "layout.h"
 #include "media/clip/media_clip_reader.h"
 #include "storage/storage_media_prepare.h"
+#include "ui/image/image.h"
+#include "ui/widgets/input_fields.h"
+#include "ui/widgets/checkbox.h"
+#include "ui/widgets/checkbox.h"
+#include "ui/special_buttons.h"
+#include "ui/text_options.h"
+#include "window/window_session_controller.h"
+#include "confirm_box.h"
+#include "facades.h"
+#include "app.h"
+#include "styles/style_layers.h"
 #include "styles/style_boxes.h"
 #include "styles/style_chat_helpers.h"
 #include "styles/style_history.h"
-#include "ui/image/image.h"
-#include "ui/special_buttons.h"
-#include "ui/text_options.h"
-#include "ui/widgets/input_fields.h"
-#include "window/window_session_controller.h"
-#include "ui/widgets/checkbox.h"
-#include "confirm_box.h"
+
+#include <QtCore/QMimeData>
 
 EditCaptionBox::EditCaptionBox(
 	QWidget*,
@@ -260,6 +268,8 @@ EditCaptionBox::EditCaptionBox(
 	_field->setEditLinkCallback(
 		DefaultEditLinkCallback(&_controller->session(), _field));
 
+	InitSpellchecker(&_controller->session(), _field);
+
 	auto r = object_ptr<Ui::SlideWrap<Ui::Checkbox>>(
 		this,
 		object_ptr<Ui::Checkbox>(
@@ -277,14 +287,13 @@ EditCaptionBox::EditCaptionBox(
 	}, _wayWrap->lifetime());
 }
 
-bool EditCaptionBox::emojiFilter(not_null<QEvent*> event) {
+void EditCaptionBox::emojiFilterForGeometry(not_null<QEvent*> event) {
 	const auto type = event->type();
 	if (type == QEvent::Move || type == QEvent::Resize) {
 		// updateEmojiPanelGeometry uses not only container geometry, but
 		// also container children geometries that will be updated later.
 		crl::on_main(this, [=] { updateEmojiPanelGeometry(); });
 	}
-	return false;
 }
 
 void EditCaptionBox::updateEmojiPanelGeometry() {
@@ -487,7 +496,7 @@ void EditCaptionBox::createEditMediaButton() {
 			if (mimeType == qstr("image/webp")) {
 				Ui::show(
 					Box<InformBox>(tr::lng_edit_media_invalid_file(tr::now)),
-					LayerOption::KeepOther);
+					Ui::LayerOption::KeepOther);
 				return false;
 			}
 			return true;
@@ -515,7 +524,7 @@ void EditCaptionBox::createEditMediaButton() {
 					|| file->type == Storage::PreparedFile::AlbumType::None) {
 					Ui::show(
 						Box<InformBox>(tr::lng_edit_media_album_error(tr::now)),
-						LayerOption::KeepOther);
+						Ui::LayerOption::KeepOther);
 					return;
 				}
 			}
@@ -545,7 +554,7 @@ void EditCaptionBox::createEditMediaButton() {
 				if (!valid) {
 					Ui::show(
 						Box<InformBox>(tr::lng_edit_media_album_error(tr::now)),
-						LayerOption::KeepOther);
+						Ui::LayerOption::KeepOther);
 					return;
 				}
 			}
@@ -681,7 +690,7 @@ bool EditCaptionBox::fileFromClipboard(not_null<const QMimeData*> data) {
 		&& _isAlbum) {
 		Ui::show(
 			Box<InformBox>(tr::lng_edit_media_album_error(tr::now)),
-			LayerOption::KeepOther);
+			Ui::LayerOption::KeepOther);
 		return false;
 	}
 
@@ -711,14 +720,16 @@ void EditCaptionBox::setupEmojiPanel() {
 		st::emojiPanMinHeight / 2,
 		st::emojiPanMinHeight);
 	_emojiPanel->hide();
-	_emojiPanel->getSelector()->emojiChosen(
+	_emojiPanel->selector()->emojiChosen(
 	) | rpl::start_with_next([=](EmojiPtr emoji) {
 		Ui::InsertEmojiAtCursor(_field->textCursor(), emoji);
 	}, lifetime());
 
-	_emojiFilter.reset(Core::InstallEventFilter(
-		container,
-		[=](not_null<QEvent*> event) { return emojiFilter(event); }));
+	const auto filterCallback = [=](not_null<QEvent*> event) {
+		emojiFilterForGeometry(event);
+		return base::EventFilterResult::Continue;
+	};
+	_emojiFilter.reset(base::install_event_filter(container, filterCallback));
 
 	_emojiToggle.create(this, st::boxAttachEmoji);
 	_emojiToggle->installEventFilter(_emojiPanel);
@@ -745,7 +756,7 @@ void EditCaptionBox::updateBoxSize() {
 }
 
 int EditCaptionBox::errorTopSkip() const {
-	return (st::boxButtonPadding.top() / 2);
+	return (st::defaultBox.buttonPadding.top() / 2);
 }
 
 void EditCaptionBox::paintEvent(QPaintEvent *e) {
@@ -807,10 +818,10 @@ void EditCaptionBox::paintEvent(QPaintEvent *e) {
 //		App::roundRect(p, x, y, w, h, st::msgInBg, MessageInCorners, &st::msgInShadow);
 
 		if (_thumbw) {
-			QRect rthumb(rtlrect(x + 0, y + 0, st::msgFileThumbSize, st::msgFileThumbSize, width()));
+			QRect rthumb(style::rtlrect(x + 0, y + 0, st::msgFileThumbSize, st::msgFileThumbSize, width()));
 			p.drawPixmap(rthumb.topLeft(), _thumb);
 		} else {
-			const QRect inner(rtlrect(x + 0, y + 0, st::msgFileSize, st::msgFileSize, width()));
+			const QRect inner(style::rtlrect(x + 0, y + 0, st::msgFileSize, st::msgFileSize, width()));
 			p.setPen(Qt::NoPen);
 			p.setBrush(st::msgFileInBg);
 
@@ -893,7 +904,7 @@ void EditCaptionBox::save() {
 	const auto textWithTags = _field->getTextWithAppliedMarkdown();
 	auto sending = TextWithEntities{
 		textWithTags.text,
-		ConvertTextTagsToEntities(textWithTags.tags)
+		TextUtilities::ConvertTextTagsToEntities(textWithTags.tags)
 	};
 	const auto prepareFlags = Ui::ItemTextOptions(
 		item->history(),
@@ -901,9 +912,9 @@ void EditCaptionBox::save() {
 	TextUtilities::PrepareForSending(sending, prepareFlags);
 	TextUtilities::Trim(sending);
 
-	const auto sentEntities = TextUtilities::EntitiesToMTP(
+	const auto sentEntities = Api::EntitiesToMTP(
 		sending.entities,
-		TextUtilities::ConvertOption::SkipLocal);
+		Api::ConvertOption::SkipLocal);
 	if (!sentEntities.v.isEmpty()) {
 		flags |= MTPmessages_EditMessage::Flag::f_entities;
 	}
@@ -912,7 +923,7 @@ void EditCaptionBox::save() {
 		const auto textWithTags = _field->getTextWithAppliedMarkdown();
 		auto sending = TextWithEntities{
 			textWithTags.text,
-			ConvertTextTagsToEntities(textWithTags.tags)
+			TextUtilities::ConvertTextTagsToEntities(textWithTags.tags)
 		};
 		item->setText(sending);
 
@@ -920,7 +931,7 @@ void EditCaptionBox::save() {
 			std::move(_preparedList),
 			(!_asFile && _photo) ? SendMediaType::Photo : SendMediaType::File,
 			_field->getTextWithAppliedMarkdown(),
-			ApiWrap::SendOptions(item->history()),
+			Api::SendAction(item->history()),
 			item->fullId().msg);
 		closeBox();
 		return;
@@ -934,7 +945,8 @@ void EditCaptionBox::save() {
 			MTP_string(sending.text),
 			MTPInputMedia(),
 			MTPReplyMarkup(),
-			sentEntities),
+			sentEntities,
+			MTP_int(0)), // schedule_date
 		rpcDone(&EditCaptionBox::saveDone),
 		rpcFail(&EditCaptionBox::saveFail));
 }

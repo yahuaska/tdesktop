@@ -25,8 +25,10 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "data/data_user.h"
 #include "base/unixtime.h"
 #include "ui/widgets/popup_menu.h"
+#include "ui/ui_utility.h"
 #include "window/window_session_controller.h"
 #include "history/history.h"
+#include "facades.h"
 
 namespace {
 
@@ -342,7 +344,7 @@ bool ParticipantsAdditionalData::canAddOrEditAdmin(
 
 bool ParticipantsAdditionalData::canRestrictUser(
 		not_null<UserData*> user) const {
-	if (!canEditAdmin(user)) {
+	if (!canEditAdmin(user) || user->isSelf()) {
 		return false;
 	} else if (const auto chat = _peer->asChat()) {
 		return chat->canBanMembers();
@@ -872,7 +874,7 @@ void ParticipantsBoxController::Start(
 	};
 	Ui::show(
 		Box<PeerListBox>(std::move(controller), initBox),
-		LayerOption::KeepOther);
+		Ui::LayerOption::KeepOther);
 }
 
 void ParticipantsBoxController::addNewItem() {
@@ -905,7 +907,7 @@ void ParticipantsBoxController::addNewItem() {
 				adminDone,
 				restrictedDone),
 			initBox),
-		LayerOption::KeepOther);
+		Ui::LayerOption::KeepOther);
 }
 
 void ParticipantsBoxController::addNewParticipants() {
@@ -927,7 +929,7 @@ void ParticipantsBoxController::addNewParticipants() {
 			channel,
 			{ already.begin(), already.end() });
 	} else {
-		Ui::show(Box<MaxInviteBox>(channel), LayerOption::KeepOther);
+		Ui::show(Box<MaxInviteBox>(channel), Ui::LayerOption::KeepOther);
 	}
 }
 
@@ -1472,7 +1474,7 @@ void ParticipantsBoxController::showAdmin(not_null<UserData*> user) {
 		});
 		box->setSaveCallback(SaveAdminCallback(_peer, user, done, fail));
 	}
-	_editParticipantBox = Ui::show(std::move(box), LayerOption::KeepOther);
+	_editParticipantBox = Ui::show(std::move(box), Ui::LayerOption::KeepOther);
 }
 
 void ParticipantsBoxController::editAdminDone(
@@ -1550,7 +1552,7 @@ void ParticipantsBoxController::showRestricted(not_null<UserData*> user) {
 		box->setSaveCallback(
 			SaveRestrictedCallback(_peer, user, done, fail));
 	}
-	_editParticipantBox = Ui::show(std::move(box), LayerOption::KeepOther);
+	_editParticipantBox = Ui::show(std::move(box), Ui::LayerOption::KeepOther);
 }
 
 void ParticipantsBoxController::editRestrictedDone(
@@ -1616,7 +1618,7 @@ void ParticipantsBoxController::kickMember(not_null<UserData*> user) {
 			text,
 			tr::lng_box_remove(tr::now),
 			crl::guard(this, [=] { kickMemberSure(user); })),
-		LayerOption::KeepOther);
+		Ui::LayerOption::KeepOther);
 }
 
 void ParticipantsBoxController::unkickMember(not_null<UserData*> user) {
@@ -1659,7 +1661,7 @@ void ParticipantsBoxController::removeAdmin(not_null<UserData*> user) {
 				user->firstName),
 			tr::lng_box_remove(tr::now),
 			crl::guard(this, [=] { removeAdminSure(user); })),
-		LayerOption::KeepOther);
+		Ui::LayerOption::KeepOther);
 }
 
 void ParticipantsBoxController::removeAdminSure(not_null<UserData*> user) {
@@ -1817,7 +1819,7 @@ void ParticipantsBoxController::refreshCustomStatus(
 			row->setCustomStatus(tr::lng_channel_admin_status_promoted_by(
 				tr::now,
 				lt_user,
-				App::peerName(by)));
+				by->name));
 		} else {
 			if (_additional.isCreator(user)) {
 				row->setCustomStatus(
@@ -1834,7 +1836,7 @@ void ParticipantsBoxController::refreshCustomStatus(
 			: tr::lng_channel_banned_status_restricted_by)(
 				tr::now,
 				lt_user,
-				by ? App::peerName(by) : "Unknown"));
+				by ? by->name : "Unknown"));
 	}
 }
 

@@ -11,6 +11,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "info/info_wrap_widget.h"
 #include "dialogs/dialogs_key.h"
 #include "window/section_memento.h"
+#include "base/object_ptr.h"
 
 namespace Storage {
 enum class SharedMediaType : signed char;
@@ -43,7 +44,7 @@ public:
 		Window::Column column,
 		const QRect &geometry) override;
 
-	object_ptr<Window::LayerWidget> createLayer(
+	object_ptr<Ui::LayerWidget> createLayer(
 		not_null<Window::SessionController*> controller,
 		const QRect &geometry) override;
 
@@ -97,7 +98,7 @@ public:
 		Window::Column column,
 		const QRect &geometry) override;
 
-	object_ptr<Window::LayerWidget> createLayer(
+	object_ptr<Ui::LayerWidget> createLayer(
 		not_null<Window::SessionController*> controller,
 		const QRect &geometry) override;
 

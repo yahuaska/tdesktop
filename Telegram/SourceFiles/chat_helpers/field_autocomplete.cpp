@@ -18,12 +18,17 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "lottie/lottie_single_player.h"
 #include "ui/widgets/scroll_area.h"
 #include "ui/image/image.h"
+#include "ui/ui_utility.h"
 #include "main/main_session.h"
 #include "chat_helpers/stickers.h"
 #include "base/unixtime.h"
+#include "facades.h"
+#include "app.h"
 #include "styles/style_history.h"
 #include "styles/style_widgets.h"
 #include "styles/style_chat_helpers.h"
+
+#include <QtWidgets/QApplication>
 
 FieldAutocomplete::FieldAutocomplete(
 	QWidget *parent,
@@ -646,7 +651,7 @@ void FieldAutocompleteInner::paintEvent(QPaintEvent *e) {
 				auto h = 1;
 				if (sticker.animated && !document->dimensions.isEmpty()) {
 					const auto request = Lottie::FrameRequest{ stickerBoundingBox() * cIntRetinaFactor() };
-					const auto size = request.size(document->dimensions) / cIntRetinaFactor();
+					const auto size = request.size(document->dimensions, true) / cIntRetinaFactor();
 					w = std::max(size.width(), 1);
 					h = std::max(size.height(), 1);
 				} else {

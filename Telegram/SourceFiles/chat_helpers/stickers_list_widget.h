@@ -23,6 +23,7 @@ class SessionController;
 namespace Ui {
 class LinkButton;
 class RippleAnimation;
+class BoxContent;
 } // namespace Ui
 
 namespace Lottie {
@@ -201,6 +202,7 @@ private:
 
 	void setSection(Section section);
 	void displaySet(uint64 setId);
+	void checkHideWithBox(QPointer<Ui::BoxContent> box);
 	void installSet(uint64 setId);
 	void removeMegagroupSet(bool locally);
 	void removeSet(uint64 setId);
@@ -310,7 +312,7 @@ private:
 
 	Section _section = Section::Stickers;
 
-	uint64 _displayingSetId = 0;
+	bool _displayingSet = false;
 	uint64 _removingSetId = 0;
 
 	Footer *_footer = nullptr;

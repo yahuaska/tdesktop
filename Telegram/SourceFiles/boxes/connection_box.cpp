@@ -11,6 +11,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "lang/lang_keys.h"
 #include "storage/localstorage.h"
 #include "base/qthelp_url.h"
+#include "base/call_delayed.h"
 #include "core/application.h"
 #include "main/main_account.h"
 #include "ui/widgets/checkbox.h"
@@ -24,9 +25,14 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/effects/animations.h"
 #include "ui/effects/radial_animation.h"
 #include "ui/text_options.h"
+#include "facades.h"
+#include "styles/style_layers.h"
 #include "styles/style_boxes.h"
 #include "styles/style_chat_helpers.h"
 #include "styles/style_info.h"
+
+#include <QtGui/QGuiApplication>
+#include <QtGui/QClipboard>
 
 namespace {
 
@@ -130,7 +136,7 @@ private:
 
 };
 
-class ProxiesBox : public BoxContent {
+class ProxiesBox : public Ui::BoxContent {
 public:
 	using View = ProxiesBoxController::ItemView;
 
@@ -162,7 +168,7 @@ private:
 
 };
 
-class ProxyBox : public BoxContent {
+class ProxyBox : public Ui::BoxContent {
 public:
 	ProxyBox(
 		QWidget*,
@@ -411,7 +417,7 @@ void ProxyRow::paintCheck(Painter &p) {
 	pen.setCapStyle(Qt::RoundCap);
 	p.setPen(pen);
 	p.setBrush(_st->bg);
-	const auto rect = rtlrect(QRectF(left, top, _st->diameter, _st->diameter).marginsRemoved(QMarginsF(_st->thickness / 2., _st->thickness / 2., _st->thickness / 2., _st->thickness / 2.)), outerWidth);
+	const auto rect = style::rtlrect(QRectF(left, top, _st->diameter, _st->diameter).marginsRemoved(QMarginsF(_st->thickness / 2., _st->thickness / 2., _st->thickness / 2., _st->thickness / 2.)), outerWidth);
 	if (_progress && loading.shown > 0 && anim::Disabled()) {
 		anim::DrawStaticLoading(
 			p,
@@ -430,7 +436,7 @@ void ProxyRow::paintCheck(Painter &p) {
 		p.setBrush(anim::brush(_st->untoggledFg, _st->toggledFg, toggled * set));
 
 		auto skip0 = _st->diameter / 2., skip1 = _st->skip / 10., checkSkip = skip0 * (1. - toggled) + skip1 * toggled;
-		p.drawEllipse(rtlrect(QRectF(left, top, _st->diameter, _st->diameter).marginsRemoved(QMarginsF(checkSkip, checkSkip, checkSkip, checkSkip)), outerWidth));
+		p.drawEllipse(style::rtlrect(QRectF(left, top, _st->diameter, _st->diameter).marginsRemoved(QMarginsF(checkSkip, checkSkip, checkSkip, checkSkip)), outerWidth));
 	}
 }
 
@@ -1025,7 +1031,7 @@ void ProxiesBoxController::ShowApplyConfirmation(
 			if (const auto strong = box->data()) {
 				strong->closeBox();
 			}
-		}), LayerOption::KeepOther);
+		}), Ui::LayerOption::KeepOther);
 	} else {
 		Ui::show(Box<InformBox>(
 			(proxy.status() == ProxyData::Status::Unsupported
@@ -1130,14 +1136,14 @@ void ProxiesBoxController::setupChecker(int id, const Checker &checker) {
 	pointer->connect(pointer, &Connection::error, failed);
 }
 
-object_ptr<BoxContent> ProxiesBoxController::CreateOwningBox() {
+object_ptr<Ui::BoxContent> ProxiesBoxController::CreateOwningBox() {
 	auto controller = std::make_unique<ProxiesBoxController>();
 	auto box = controller->create();
 	Ui::AttachAsChild(box, std::move(controller));
 	return box;
 }
 
-object_ptr<BoxContent> ProxiesBoxController::create() {
+object_ptr<Ui::BoxContent> ProxiesBoxController::create() {
 	auto result = Box<ProxiesBox>(this);
 	for (const auto &item : _list) {
 		updateView(item);
@@ -1245,7 +1251,7 @@ void ProxiesBoxController::setDeleted(int id, bool deleted) {
 	updateView(*item);
 }
 
-object_ptr<BoxContent> ProxiesBoxController::editItemBox(int id) {
+object_ptr<Ui::BoxContent> ProxiesBoxController::editItemBox(int id) {
 	return Box<ProxyBox>(findById(id)->data, [=](const ProxyData &result) {
 		auto i = findById(id);
 		auto j = ranges::find(
@@ -1296,7 +1302,7 @@ void ProxiesBoxController::replaceItemValue(
 	saveDelayed();
 }
 
-object_ptr<BoxContent> ProxiesBoxController::addNewItemBox() {
+object_ptr<Ui::BoxContent> ProxiesBoxController::addNewItemBox() {
 	return Box<ProxyBox>(ProxyData(), [=](const ProxyData &result) {
 		auto j = ranges::find(
 			_list,
@@ -1426,15 +1432,15 @@ void ProxiesBoxController::share(const ProxyData &proxy) {
 			? "&pass=" + qthelp::url_encode(proxy.password) : "")
 		+ ((proxy.type == Type::Mtproto && !proxy.password.isEmpty())
 			? "&secret=" + proxy.password : "");
-	QApplication::clipboard()->setText(link);
+	QGuiApplication::clipboard()->setText(link);
 	Ui::Toast::Show(tr::lng_username_copied(tr::now));
 }
 
 ProxiesBoxController::~ProxiesBoxController() {
 	if (_saveTimer.isActive()) {
-		App::CallDelayed(
+		base::call_delayed(
 			kSaveSettingsDelayedTimeout,
-			QApplication::instance(),
+			QCoreApplication::instance(),
 			[] { Local::writeSettings(); });
 	}
 }

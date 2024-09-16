@@ -25,17 +25,6 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 
 namespace base {
 
-template <typename D, typename T>
-inline constexpr D up_cast(T object) {
-	using DV = std::decay_t<decltype(*D())>;
-	using TV = std::decay_t<decltype(*T())>;
-	if constexpr (std::is_base_of_v<DV, TV>) {
-		return object;
-	} else {
-		return nullptr;
-	}
-}
-
 template <typename T>
 using set_of_unique_ptr = std::set<std::unique_ptr<T>, base::pointer_comparator<T>>;
 
@@ -67,8 +56,12 @@ T *SharedMemoryLocation() {
 // see https://github.com/boostcon/cppnow_presentations_2012/blob/master/wed/schurr_cpp11_tools_for_class_authors.pdf
 class str_const { // constexpr string
 public:
-	template<std::size_t N>
-	constexpr str_const(const char(&a)[N]) : _str(a), _size(N - 1) {
+	constexpr str_const(const char *str, std::size_t size)
+	: _str(str)
+	, _size(size) {
+	}
+	template <std::size_t N>
+	constexpr str_const(const char(&a)[N]) : str_const(a, N - 1) {
 	}
 	constexpr char operator[](std::size_t n) const {
 		return (n < _size) ? _str[n] :
@@ -79,7 +72,7 @@ public:
 #endif // OS_MAC_OLD
 	}
 	constexpr std::size_t size() const { return _size; }
-	const char *c_str() const { return _str; }
+	constexpr const char *c_str() const { return _str; }
 
 private:
 	const char* const _str;
@@ -133,8 +126,6 @@ private:
 	uchar _digest[16];
 
 };
-
-int32 hashCrc32(const void *data, uint32 len);
 
 int32 *hashSha1(const void *data, uint32 len, void *dest); // dest - ptr to 20 bytes, returns (int32*)dest
 inline std::array<char, 20> hashSha1(const void *data, int size) {
@@ -204,19 +195,6 @@ private:
 	bool _locked = false;
 
 };
-
-inline QString fromUtf8Safe(const char *str, int32 size = -1) {
-	if (!str || !size) return QString();
-	if (size < 0) size = int32(strlen(str));
-	QString result(QString::fromUtf8(str, size));
-	QByteArray back = result.toUtf8();
-	if (back.size() != size || memcmp(back.constData(), str, size)) return QString::fromLocal8Bit(str, size);
-	return result;
-}
-
-inline QString fromUtf8Safe(const QByteArray &str) {
-	return fromUtf8Safe(str.constData(), str.size());
-}
 
 static const QRegularExpression::PatternOptions reMultiline(QRegularExpression::DotMatchesEverythingOption | QRegularExpression::MultilineOption);
 

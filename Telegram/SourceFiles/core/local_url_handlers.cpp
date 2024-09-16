@@ -7,6 +7,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 */
 #include "core/local_url_handlers.h"
 
+#include "api/api_text_entities.h"
 #include "base/qthelp_regex.h"
 #include "base/qthelp_url.h"
 #include "lang/lang_cloud_manager.h"
@@ -22,11 +23,13 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "passport/passport_form_controller.h"
 #include "window/window_session_controller.h"
 #include "data/data_session.h"
+#include "data/data_cloud_themes.h"
 #include "data/data_channel.h"
 #include "mainwindow.h"
 #include "mainwidget.h"
 #include "main/main_session.h"
 #include "apiwrap.h"
+#include "app.h"
 
 namespace Core {
 namespace {
@@ -75,6 +78,21 @@ bool ShowStickerSet(
 	Ui::show(Box<StickerSetBox>(
 		App::wnd()->sessionController(),
 		MTP_inputStickerSetShortName(MTP_string(match->captured(1)))));
+	return true;
+}
+
+bool ShowTheme(
+		Main::Session *session,
+		const Match &match,
+		const QVariant &context) {
+	if (!session) {
+		return false;
+	}
+	const auto clickFromMessageId = context.value<FullMsgId>();
+	Core::App().hideMediaView();
+	session->data().cloudThemes().resolve(
+		match->captured(1),
+		clickFromMessageId);
 	return true;
 }
 
@@ -320,11 +338,10 @@ bool HandleUnknown(
 	const auto callback = [=](const MTPDhelp_deepLinkInfo &result) {
 		const auto text = TextWithEntities{
 			qs(result.vmessage()),
-			TextUtilities::EntitiesFromMTP(
-				result.ventities().value_or_empty())
+			Api::EntitiesFromMTP(result.ventities().value_or_empty())
 		};
 		if (result.is_update_app()) {
-			const auto box = std::make_shared<QPointer<BoxContent>>();
+			const auto box = std::make_shared<QPointer<Ui::BoxContent>>();
 			const auto callback = [=] {
 				Core::UpdateApplication();
 				if (*box) (*box)->closeBox();
@@ -352,6 +369,10 @@ const std::vector<LocalUrlHandler> &LocalUrlHandlers() {
 		{
 			qsl("^addstickers/?\\?set=([a-zA-Z0-9\\.\\_]+)(&|$)"),
 			ShowStickerSet
+		},
+		{
+			qsl("^addtheme/?\\?slug=([a-zA-Z0-9\\.\\_]+)(&|$)"),
+			ShowTheme
 		},
 		{
 			qsl("^setlanguage/?\\?lang=([a-zA-Z0-9\\.\\_\\-]+)(&|$)"),
@@ -415,6 +436,8 @@ QString TryConvertUrlToLocal(QString url) {
 			return qsl("tg://join?invite=") + url_encode(joinChatMatch->captured(1));
 		} else if (auto stickerSetMatch = regex_match(qsl("^addstickers/([a-zA-Z0-9\\.\\_]+)(\\?|$)"), query, matchOptions)) {
 			return qsl("tg://addstickers?set=") + url_encode(stickerSetMatch->captured(1));
+		} else if (auto themeMatch = regex_match(qsl("^addtheme/([a-zA-Z0-9\\.\\_]+)(\\?|$)"), query, matchOptions)) {
+			return qsl("tg://addtheme?slug=") + url_encode(themeMatch->captured(1));
 		} else if (auto languageMatch = regex_match(qsl("^setlanguage/([a-zA-Z0-9\\.\\_\\-]+)(\\?|$)"), query, matchOptions)) {
 			return qsl("tg://setlanguage?lang=") + url_encode(languageMatch->captured(1));
 		} else if (auto shareUrlMatch = regex_match(qsl("^share/url/?\\?(.+)$"), query, matchOptions)) {

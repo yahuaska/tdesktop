@@ -11,8 +11,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "ui/effects/cross_animation.h"
 #include "ui/effects/numbers_animation.h"
 #include "ui/image/image_prepare.h"
-#include "window/themes/window_theme.h"
-#include "lang/lang_instance.h"
+#include "ui/painter.h"
 
 namespace Ui {
 
@@ -90,13 +89,11 @@ void RippleButton::setForceRippled(
 	if (_forceRippled != rippled) {
 		_forceRippled = rippled;
 		if (_forceRippled) {
-			_forceRippledSubscription = base::ObservableViewer(
-				*Window::Theme::Background()
-			) | rpl::start_with_next([=](
-					const Window::Theme::BackgroundUpdate &update) {
-				if (update.paletteChanged() && _ripple) {
-					_ripple->forceRepaint();
-				}
+			_forceRippledSubscription = style::PaletteChanged(
+			) | rpl::filter([=] {
+				return _ripple != nullptr;
+			}) | rpl::start_with_next([=] {
+				_ripple->forceRepaint();
 			});
 			ensureRipple();
 			if (_ripple->empty()) {
@@ -349,7 +346,12 @@ void RoundButton::paintEvent(QPaintEvent *e) {
 			p.setBrush(color);
 			p.drawRoundedRect(fill, radius, radius);
 		} else {
-			App::roundRect(p, fill, color, ImageRoundRadius::Small);
+			PainterHighQualityEnabler hq(p);
+			p.setPen(Qt::NoPen);
+			p.setBrush(color);
+			p.drawRoundedRect(fill, st::buttonRadius, st::buttonRadius);
+			// #TODO ui
+			//App::roundRect(p, fill, color, ImageRoundRadius::Small);
 		}
 	};
 	drawRect(_st.textBg);
@@ -397,7 +399,7 @@ void RoundButton::paintEvent(QPaintEvent *e) {
 
 QImage RoundButton::prepareRippleMask() const {
 	auto innerWidth = contentWidth();
-	auto rounded = rtlrect(rect().marginsRemoved(_st.padding), width());
+	auto rounded = style::rtlrect(rect().marginsRemoved(_st.padding), width());
 	if (_fullWidthOverride < 0) {
 		rounded = QRect(0, rounded.top(), innerWidth - _fullWidthOverride, rounded.height());
 	}
@@ -495,49 +497,6 @@ QPoint IconButton::prepareRippleStartPosition() const {
 
 QImage IconButton::prepareRippleMask() const {
 	return RippleAnimation::ellipseMask(QSize(_st.rippleAreaSize, _st.rippleAreaSize));
-}
-
-LeftOutlineButton::LeftOutlineButton(QWidget *parent, const QString &text, const style::OutlineButton &st) : RippleButton(parent, st.ripple)
-, _text(text)
-, _fullText(text)
-, _textWidth(st.font->width(_text))
-, _fullTextWidth(_textWidth)
-, _st(st) {
-	resizeToWidth(_textWidth + _st.padding.left() + _st.padding.right());
-
-	setCursor(style::cur_pointer);
-}
-
-void LeftOutlineButton::setText(const QString &text) {
-	_text = text;
-	_fullText = text;
-	_fullTextWidth = _textWidth = _st.font->width(_text);
-	resizeToWidth(width());
-	update();
-}
-
-int LeftOutlineButton::resizeGetHeight(int newWidth) {
-	int availableWidth = qMax(newWidth - _st.padding.left() - _st.padding.right(), 1);
-	if ((availableWidth < _fullTextWidth) || (_textWidth < availableWidth)) {
-		_text = _st.font->elided(_fullText, availableWidth);
-		_textWidth = _st.font->width(_text);
-	}
-	return _st.padding.top() + _st.font->height + _st.padding.bottom();
-}
-
-void LeftOutlineButton::paintEvent(QPaintEvent *e) {
-	Painter p(this);
-
-	auto over = isOver();
-	auto down = isDown();
-	if (width() > _st.outlineWidth) {
-		p.fillRect(rtlrect(_st.outlineWidth, 0, width() - _st.outlineWidth, height(), width()), (over || down) ? _st.textBgOver : _st.textBg);
-		paintRipple(p, 0, 0);
-		p.fillRect(rtlrect(0, 0, _st.outlineWidth, height(), width()), (over || down) ? _st.outlineFgOver : _st.outlineFg);
-	}
-	p.setFont(_st.font);
-	p.setPen((over || down) ? _st.textFgOver : _st.textFg);
-	p.drawTextLeft(_st.padding.left(), _st.padding.top(), width(), _text, _textWidth);
 }
 
 CrossButton::CrossButton(QWidget *parent, const style::CrossButton &st) : RippleButton(parent, st.ripple)

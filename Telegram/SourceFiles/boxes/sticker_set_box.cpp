@@ -29,8 +29,12 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "apiwrap.h"
 #include "mainwidget.h"
 #include "mainwindow.h"
-#include "styles/style_boxes.h"
+#include "app.h"
+#include "styles/style_layers.h"
 #include "styles/style_chat_helpers.h"
+
+#include <QtWidgets/QApplication>
+#include <QtGui/QClipboard>
 
 namespace {
 
@@ -132,16 +136,17 @@ StickerSetBox::StickerSetBox(
 , _set(set) {
 }
 
-void StickerSetBox::Show(
+QPointer<Ui::BoxContent> StickerSetBox::Show(
 		not_null<Window::SessionController*> controller,
 		not_null<DocumentData*> document) {
 	if (const auto sticker = document->sticker()) {
 		if (sticker->set.type() != mtpc_inputStickerSetEmpty) {
-			Ui::show(
+			return Ui::show(
 				Box<StickerSetBox>(controller, sticker->set),
-				LayerOption::KeepOther);
+				Ui::LayerOption::KeepOther).data();
 		}
 	}
+	return nullptr;
 }
 
 void StickerSetBox::prepare() {
@@ -177,7 +182,7 @@ void StickerSetBox::addStickers() {
 
 void StickerSetBox::shareStickers() {
 	auto url = Core::App().createInternalLinkFull(qsl("addstickers/") + _inner->shortName());
-	QApplication::clipboard()->setText(url);
+	QGuiApplication::clipboard()->setText(url);
 	Ui::show(Box<InformBox>(tr::lng_stickers_copied(tr::now)));
 }
 
@@ -436,7 +441,7 @@ void StickerSetBox::Inner::mouseReleaseEvent(QMouseEvent *e) {
 		const auto index = stickerFromGlobalPos(e->globalPos());
 		if (index >= 0 && index < _pack.size() && !isMasksSet()) {
 			const auto sticker = _pack[index];
-			Core::App().postponeCall(crl::guard(App::main(), [=] {
+			Ui::PostponeCall(crl::guard(App::main(), [=] {
 				if (App::main()->onSendSticker(sticker)) {
 					Ui::hideSettingsAndLayer();
 				}
@@ -625,7 +630,7 @@ void StickerSetBox::Inner::paintSticker(
 	auto h = 1;
 	if (element.animated && !document->dimensions.isEmpty()) {
 		const auto request = Lottie::FrameRequest{ boundingBoxSize() * cIntRetinaFactor() };
-		const auto size = request.size(document->dimensions) / cIntRetinaFactor();
+		const auto size = request.size(document->dimensions, true) / cIntRetinaFactor();
 		w = std::max(size.width(), 1);
 		h = std::max(size.height(), 1);
 	} else {
@@ -690,7 +695,7 @@ void StickerSetBox::Inner::install() {
 	if (isMasksSet()) {
 		Ui::show(
 			Box<InformBox>(tr::lng_stickers_masks_pack(tr::now)),
-			LayerOption::KeepOther);
+			Ui::LayerOption::KeepOther);
 		return;
 	} else if (_installRequest) {
 		return;

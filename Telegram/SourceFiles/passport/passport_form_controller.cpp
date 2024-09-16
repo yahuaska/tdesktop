@@ -17,6 +17,7 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "base/openssl_help.h"
 #include "base/qthelp_url.h"
 #include "base/unixtime.h"
+#include "base/call_delayed.h"
 #include "data/data_session.h"
 #include "data/data_user.h"
 #include "mainwindow.h"
@@ -28,6 +29,11 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 #include "storage/localstorage.h"
 #include "storage/file_upload.h"
 #include "storage/file_download.h"
+#include "app.h"
+
+#include <QtCore/QJsonDocument>
+#include <QtCore/QJsonArray>
+#include <QtCore/QJsonObject>
 
 namespace Passport {
 namespace {
@@ -750,8 +756,10 @@ std::vector<not_null<const Value*>> FormController::submitGetErrors() {
 
 		_view->showToast(tr::lng_passport_success(tr::now));
 
-		App::CallDelayed(
-			Ui::Toast::DefaultDuration + st::toastFadeOutDuration,
+		base::call_delayed(
+			(st::toastFadeInDuration
+				+ Ui::Toast::kDefaultDuration
+				+ st::toastFadeOutDuration),
 			this,
 			[=] { cancel(); });
 	}).fail([=](const RPCError &error) {
@@ -1510,7 +1518,7 @@ void FormController::uploadEncryptedFile(
 	auto prepared = std::make_shared<FileLoadResult>(
 		TaskId(),
 		file.uploadData->fileId,
-		FileLoadTo(PeerId(0), false, MsgId(0)),
+		FileLoadTo(PeerId(0), Api::SendOptions(), MsgId(0)),
 		TextWithTags(),
 		std::shared_ptr<SendingAlbum>(nullptr));
 	prepared->type = SendMediaType::Secure;
@@ -1520,7 +1528,9 @@ void FormController::uploadEncryptedFile(
 	prepared->setFileData(prepared->content);
 	prepared->filemd5 = file.uploadData->md5checksum;
 
-	file.uploadData->fullId = FullMsgId(0, clientMsgId());
+	file.uploadData->fullId = FullMsgId(
+		0,
+		Auth().data().nextLocalMessageId());
 	Auth().uploader().upload(file.uploadData->fullId, std::move(prepared));
 }
 
@@ -2659,7 +2669,7 @@ void FormController::cancelSure() {
 			UrlClickHandler::Open(url);
 		}
 		const auto timeout = _view->closeGetDuration();
-		App::CallDelayed(timeout, this, [=] {
+		base::call_delayed(timeout, this, [=] {
 			_controller->clearPassportForm();
 		});
 	}

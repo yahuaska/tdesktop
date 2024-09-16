@@ -13,35 +13,11 @@ https://github.com/telegramdesktop/tdesktop/blob/master/LEGAL
 namespace MTP {
 namespace internal {
 
-bool paused();
+[[nodiscard]] bool paused();
 void pause();
 void unpause();
 
 } // namespace internal
-
-class PauseHolder {
-public:
-	PauseHolder() {
-		restart();
-	}
-	void restart() {
-		if (!std::exchange(_paused, true)) {
-			internal::pause();
-		}
-	}
-	void release() {
-		if (std::exchange(_paused, false)) {
-			internal::unpause();
-		}
-	}
-	~PauseHolder() {
-		release();
-	}
-
-private:
-	bool _paused = false;
-
-};
 
 // send(MTPhelp_GetConfig(), MTP::configDcId(dc)) - for dc enumeration
 constexpr ShiftedDcId configDcId(DcId dcId) {
@@ -58,8 +34,8 @@ constexpr ShiftedDcId updaterDcId(DcId dcId) {
 	return ShiftDcId(dcId, kUpdaterDcShift);
 }
 
-constexpr auto kDownloadSessionsCount = 2;
-constexpr auto kUploadSessionsCount = 2;
+constexpr auto kDownloadSessionsCount = 8;
+constexpr auto kUploadSessionsCount = 8;
 
 namespace internal {
 
